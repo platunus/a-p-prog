@@ -11,7 +11,7 @@ The current project status: Programmer working, sources need cleanup, perhaps re
 There are two options fo hardware for this project:
 
 ### Hardware option 1 - Arduino hardware
-Take any Arduino with ATmega328P, like Uno or most of cheap chinese knock-off boards. Considering the target has its own power supply, connect GND, MCLR, PGC and PGD lines to respective pins on arduino as follows:
+Take any Arduino with ATmega328P or ATmega32u4, like Uno, pro micro or most of cheap chinese knock-off boards. Considering the target has its own power supply, connect GND, MCLR, PGC and PGD lines to respective pins on arduino as follows:
 
 | Arduino pin | AVR pin | Target PIC pin | Comment                                                                     |
 |-------------|---------|----------------|-----------------------------------------------------------------------------|
@@ -26,18 +26,28 @@ Take any Arduino with ATmega328P, like Uno or most of cheap chinese knock-off bo
 Power it up, no smoke should be released. Run arduino IDE, open programmer firmware from here (/fw/pp.ino), complie and upload to arduino board - now you have PIC programmer ready to go. Go to software below.
 
 The programmer is proven to work with some generic Uno board from china, as well as chinese arduino-nano clone
-![img_5494](https://cloud.githubusercontent.com/assets/6984904/17290864/ddd9d386-57e0-11e6-8d15-55c6c0e015a6.JPG)
+
+<img src="images/a-p-prog-0001.jpg" alt="" width="48%">
+
+
+The [Pro Micro ICSP shield](https://github.com/hanyazou/Pro-Micro-ICSP-shield) is a tiny "shield" for Arduino Pro Micro which featured ATmega32u4.
+This tiny board simply connect ATMEGA 32u4's A0, A1 and A3 to PIC's MCLR, PGD and PGC, but acts as a PIC programmer.
+
+<img src="images/EMUZ80-and-ICSP-shield.jpg" alt="" width="98%">
 
 ### Hardware option 2 - dedicated board
 I designed this little board, see at /hw directory
-![img_4319](https://cloud.githubusercontent.com/assets/6984904/17289293/5cedd6c0-57d9-11e6-86b8-8d692eaa24e3.JPG)
+
+<img src="images/a-p-prog-0002.jpg" alt="" width="48%">
+
 Considering the target has its own power supply, connect GND, MCLR, PGC and PGD lines to respective pins on PIC programmer (notice the pinout similar to PICkit programmers). Vdd line is not currently used ad it is not needed for operation of programmer, but future revisions of firmware may take advantage of this pin and detect target VDD.
 The hardware works with both FT232RL and CY7C65213 in place of USB/serial converter. Both were proven to work, with no other hardware difference.
-![img_4320](https://cloud.githubusercontent.com/assets/6984904/17289353/a3ccf6d4-57d9-11e6-9d4f-595633e7841a.JPG)
+
+<img src="images/a-p-prog-0003.jpg" alt="" width="48%">
 
 Use [another arduino](https://www.arduino.cc/en/Tutorial/ArduinoISP) (or proper ISP programmer) to load Arduino UNO bootloader to PIC programmer board (performed only once), turning it into regular arduino compatible board.
 
-![img_4329](https://cloud.githubusercontent.com/assets/6984904/17289342/98207cf2-57d9-11e6-9b62-caba0b140ca5.JPG)
+<img src="images/a-p-prog-0004.jpg" alt="" width="48%">
 
 Ensure JP2 is closed, then you can load new firmware into PIC programmer using regular Arduino IDE. Open jumper JP2. Now you have your programmer ready to go, move on to software.
 The firmware should be able to compile outside Arduino IDE as it doesn't contain any Arduino-specific stuff, though I haven't tried that.
