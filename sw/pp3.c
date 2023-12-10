@@ -1118,7 +1118,11 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
             if ((line_address_offset==0x01)&(p16_cfg==1))
                 {
                 if (verbose>2) printf("CB ");
-                for (i=0; i<line_len; i++) config[line_address+i-0x0E] = line_content[i];
+                for (i=0; i<line_len; i++)
+                    {
+                    if (0 <= line_address + i - 0x0E)
+                        config[line_address+i-0x0E] = line_content[i];
+                    }
                 }
             }
         if (line_type==4)
