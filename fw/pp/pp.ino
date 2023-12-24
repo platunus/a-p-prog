@@ -80,6 +80,11 @@ void usart_tx_b(uint8_t data);
 uint8_t usart_rx_rdy(void);
 uint8_t usart_rx_b(void);
 
+#define EXEC_OPS
+#ifdef EXEC_OPS
+void exec_ops(uint8_t *ops, int n);
+#endif
+
 #define BAUD	57600	// Baud rate (9600 is default)
 
 int rx_state = 0;
@@ -285,6 +290,11 @@ void loop()
         p18qxx_bulk_erase();
         usart_tx_b(0xC3);
         break;
+#ifdef EXEC_OPS
+    case 0x80:
+        exec_ops(&rx_message[2], rx_message[1]);
+        break;
+#endif
     }
     rx_state = 0;
 }
@@ -950,5 +960,106 @@ uint8_t usart_rx_rdy(void)
 uint8_t usart_rx_b(void)
 {
     return (uint8_t)Serial.read();
+}
+#endif
+
+#ifdef EXEC_OPS
+enum {
+    OP_IO_MCLR = 99,
+    OP_IO_DAT,
+    OP_IO_CLK,
+    OP_READ_ISP,
+    OP_WRITE_ISP,
+    OP_READ_ISP_BITS,
+    OP_WRITE_ISP_BITS,
+    OP_DELAY_US,
+    OP_DELAY_10US,
+    OP_DELAY_MS,
+    OP_REPLY,
+    OP_NONE = 0xff,
+};
+
+void exec_ops(uint8_t *ops, int len)
+{
+    uint8_t i, n, t, d;
+    uint8_t *endp = &ops[len];
+
+    while (ops < endp) {
+        n = ops[1];
+        switch (ops[0]) {
+        case OP_IO_MCLR:
+            ISP_MCLR(n & 0x01);
+            break;
+        case OP_IO_DAT:
+            if (n & 0x02) {
+                ISP_DAT(n & 0x01);
+                ISP_DAT_OUT;
+            } else {
+                ISP_DAT_IN;
+            }
+            break;
+        case OP_IO_CLK:
+            if (n & 0x02) {
+                ISP_CLK(n & 0x01);
+                ISP_CLK_OUT;
+            } else {
+                ISP_CLK_IN;
+            }
+            break;
+        case OP_READ_ISP:
+            d = 0;
+            ISP_DAT_IN;
+            while (0 < n--) {
+                for (i = 0; i < 8; i++) {
+                    ISP_CLK(1);
+                    DELAY;
+                    ISP_CLK(0);
+                    DELAY;
+                    d = (d << 1) | ((ISP_DAT_V) ? 1 : 0);
+                }
+                usart_tx_b(d);
+            }
+            break;
+        case OP_WRITE_ISP:
+            ISP_DAT_OUT;
+            while (0 < n--) {
+                d = ops[2];
+                ops++;
+                for (i = 0; i < 8; i++) {
+                    ISP_DAT(d & 0x80);
+                    DELAY;
+                    ISP_CLK(1);
+                    DELAY;
+                    d <<= 1;
+                    ISP_CLK(0);
+                    ISP_DAT(0);
+                }
+            }
+            DELAY3;  // XXX
+            break;
+        case OP_READ_ISP_BITS:
+            // not implemented yet
+            break;
+        case OP_WRITE_ISP_BITS:
+            // not implemented yet
+            break;
+        case OP_DELAY_US:
+            while (0 < n--)
+              _delay_us(1);
+            break;
+        case OP_DELAY_10US:
+            while (0 < n--)
+              _delay_us(10);
+            break;
+        case OP_DELAY_MS:
+            while (0 < n--)
+              _delay_ms(1);
+            break;
+        case OP_REPLY:
+            usart_tx_b(n);
+            break;
+        }
+        ops += 2;
+    }
 }
 #endif
