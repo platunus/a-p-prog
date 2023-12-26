@@ -5,6 +5,11 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
+// #define DEBUG
+// #define DEBUG_VERBOSE
+#define EXEC_OPS
+#define BAUD	57600	// Baud rate (9600 is default)
+
 #if defined(ARDUINO_AVR_UNO)
     // Arduino UNO
     #define ISP_PORT  PORTC
@@ -80,12 +85,26 @@ void usart_tx_b(uint8_t data);
 uint8_t usart_rx_rdy(void);
 uint8_t usart_rx_b(void);
 
-#define EXEC_OPS
 #ifdef EXEC_OPS
 void exec_ops(uint8_t *ops, int n);
 #endif
 
-#define BAUD	57600	// Baud rate (9600 is default)
+#if defined(DEBUG)
+#define debug_print(msg ...) do { \
+    char buf[100]; \
+    sprintf(buf, msg); \
+    Serial1.println(buf); } while (0)
+#else
+#define debug_print(msg ...) do { } while (0)
+#endif
+#if defined(DEBUG_VERBOSE)
+#define verbose_print(msg ...) do { \
+    char buf[100]; \
+    sprintf(buf, msg); \
+    Serial1.println(buf); } while (0)
+#else
+#define verbose_print(msg ...) do { } while (0)
+#endif
 
 int rx_state = 0;
 int rx_message_ptr;
@@ -105,6 +124,11 @@ void setup(void)
 #if defined(ARDUINO_AVR_LEONARDO)
     Serial.begin(BAUD);
     while (!Serial);
+#endif
+
+#if defined(DEBUG)
+  Serial1.begin(115200);
+  Serial1.println("Hello, debug serial!");
 #endif
 
     release_isp_dat_clk();
@@ -130,28 +154,34 @@ void loop()
 
     switch (rx_message[0]) {
     case 0x01:
+        debug_print("0x01: enter_progmode");
         enter_progmode();
         usart_tx_b(0x81);
         break;
     case 0x02:
+        debug_print("0x02: exit_progmode");
         exit_progmode();
         usart_tx_b(0x82);
         break;
     case 0x03:
+        debug_print("0x03: isp_reset_pointer");
         isp_reset_pointer();
         usart_tx_b(0x83);
         break;
     case 0x04:
+        debug_print("0x04: isp_send_config");
         isp_send_config(0);
         usart_tx_b(0x84);
         break;
     case 0x05:
+        debug_print("0x05: isp_inc_pointer");
         for (i=0; i < rx_message[2]; i++) {
             isp_inc_pointer();
         }
         usart_tx_b(0x85);
         break;
     case 0x06:
+        debug_print("0x06: isp_read_pgm");
         usart_tx_b(0x86);
         isp_read_pgm(flash_buffer, rx_message[2]);
         for (i=0; i < rx_message[2]; i++) {
@@ -160,10 +190,12 @@ void loop()
         }
         break;
     case 0x07:
+        debug_print("0x07: isp_mass_erase");
         isp_mass_erase();
         usart_tx_b(0x87);
         break;
     case 0x08:
+        debug_print("0x08: isp_write_pgm");
         for (i=0; i < rx_message[2] / 2; i++) {
             flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+4]))<<8) + (((unsigned int)(rx_message[(2*i)+0+4]))<<0);
         }
@@ -171,14 +203,17 @@ void loop()
         usart_tx_b(0x88);
         break;
     case 0x09:
+        debug_print("0x09: isp_reset_pointer_16d");
         isp_reset_pointer_16d();
         usart_tx_b(0x89);
         break;
     case 0x10:
+        debug_print("0x10: p18_enter_progmode");
         p18_enter_progmode();
         usart_tx_b(0x90);
         break;
     case 0x11:
+        debug_print("0x11: p_18_isp_read_pgm");
         usart_tx_b(0x91);
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         p_18_isp_read_pgm(flash_buffer, addr, rx_message[2]);
@@ -188,6 +223,7 @@ void loop()
         }
         break;
     case 0x12:
+        debug_print("0x12: p18_isp_write_pgm");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         for (i=0; i < rx_message[2] / 2; i++) {
             flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+6]))<<8) + (((unsigned int)(rx_message[(2*i)+0+6]))<<0);
@@ -196,23 +232,28 @@ void loop()
         usart_tx_b(0x92);
         break;
     case 0x13:
+        debug_print("0x13: p18_isp_mass_erase");
         p18_isp_mass_erase();
         usart_tx_b(0x93);
         break;
     case 0x14:
+        debug_print("0x14: p18_isp_write_cfg");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         p18_isp_write_cfg(rx_message[6], rx_message[7], addr);
         usart_tx_b(0x94);
         break;
     case 0x23:
+        debug_print("0x23: p18fj_isp_mass_erase");
         p18fj_isp_mass_erase();
         usart_tx_b(0xA3);
         break;
     case 0x30:
+        debug_print("0x30: p18fk_isp_mass_erase");
         p18fk_isp_mass_erase(rx_message[2], rx_message[3], rx_message[4]);
         usart_tx_b(0xB0);
         break;
     case 0x31:
+        debug_print("0x31: p18fk_isp_write_pgm");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         for (i=0; i < rx_message[2] / 2; i++) {
             flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+6]))<<8) + (((unsigned int)(rx_message[(2*i)+0+6]))<<0);
@@ -221,15 +262,18 @@ void loop()
         usart_tx_b(0xB1);
         break;
     case 0x32:
+        debug_print("0x32: p18fk_isp_write_cfg");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         p18fk_isp_write_cfg(rx_message[6], rx_message[7], addr);
         usart_tx_b(0xB2);
         break;
     case 0x40:
+        debug_print("0x40: p16c_enter_progmode");
         p16c_enter_progmode();
         usart_tx_b(0xC0);
         break;
     case 0x41:
+        debug_print("0x41: p16c_isp_read_pgm");
         usart_tx_b(0xC1);
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         p16c_isp_read_pgm(flash_buffer, addr, rx_message[2]);
@@ -239,6 +283,7 @@ void loop()
         }
         break;
     case 0x42:
+        debug_print("0x42: p16c_isp_write_pgm");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         for (i=0; i < rx_message[2] / 2; i++) {
             flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+6]))<<8) + (((unsigned int)(rx_message[(2*i)+0+6]))<<0);
@@ -247,11 +292,13 @@ void loop()
         usart_tx_b(0xC2);
         break;
     case 0x43:
+        debug_print("0x43: p16c_bulk_erase");
         p16c_set_pc(0x8000);
         p16c_bulk_erase();
         usart_tx_b(0xC3);
         break;
     case 0x44:
+        debug_print("0x44: p16c_isp_write_cfg");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         cfg_val = rx_message[6];
         cfg_val = (cfg_val << 8) + rx_message[7];
@@ -259,6 +306,7 @@ void loop()
         usart_tx_b(0xC4);
         break;
     case 0x45:
+        debug_print("0x45: p18q_isp_write_cfg");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         cfg_val = rx_message[6];
         cfg_val = (cfg_val << 8) + rx_message[7];
@@ -266,6 +314,7 @@ void loop()
         usart_tx_b(0xC5);
         break;
     case 0x46:
+        debug_print("0x46: p18q_isp_write_pgm");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         for (i=0; i < rx_message[2] / 2; i++) {
             flash_buffer[i] = (((unsigned int)(rx_message[(2*i)+1+6]))<<8) + (((unsigned int)(rx_message[(2*i)+0+6]))<<0);
@@ -274,6 +323,7 @@ void loop()
         usart_tx_b(0xC6);
         break;
     case 0x47:
+        debug_print("0x47: p18q_isp_read_cfg");
         usart_tx_b(0xC7);
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         p18q_isp_read_cfg(flash_buffer, addr, rx_message[2]);
@@ -282,16 +332,20 @@ void loop()
         }
         break;
     case 0x48:
+        debug_print("0x48: p18q_isp_write_cfg");
         addr = (((unsigned long)(rx_message[3]))<<16) + (((unsigned long)(rx_message[4]))<<8) + (((unsigned long)(rx_message[5]))<<0);
         p18q_isp_write_cfg(rx_message[6], addr);
         usart_tx_b(0xC5);
         break;
     case 0x49:
+        debug_print("0x49: p18qxx_bulk_erase");
         p18qxx_bulk_erase();
         usart_tx_b(0xC3);
         break;
 #ifdef EXEC_OPS
     case 0x80:
+        debug_print("0x80: exec_ops: %02x %02x %02x %02x %02x ...",
+                    rx_message[1], rx_message[2], rx_message[3], rx_message[4], rx_message[5]);
         exec_ops(&rx_message[2], rx_message[1]);
         break;
 #endif
@@ -988,9 +1042,11 @@ void exec_ops(uint8_t *ops, int len)
         n = ops[1];
         switch (ops[0]) {
         case OP_IO_MCLR:
+            verbose_print("0x80: exec_ops: %13s %02x %02x", "IO_MCLR", n, ops[2]);
             ISP_MCLR(n & 0x01);
             break;
         case OP_IO_DAT:
+            verbose_print("0x80: exec_ops: %13s %02x %02x", "IO_DAT", n, ops[2]);
             if (n & 0x02) {
                 ISP_DAT(n & 0x01);
                 ISP_DAT_OUT;
@@ -999,6 +1055,7 @@ void exec_ops(uint8_t *ops, int len)
             }
             break;
         case OP_IO_CLK:
+            verbose_print("0x80: exec_ops: %13s %02x %02x", "IO_CLK", n, ops[2]);
             if (n & 0x02) {
                 ISP_CLK(n & 0x01);
                 ISP_CLK_OUT;
@@ -1007,6 +1064,7 @@ void exec_ops(uint8_t *ops, int len)
             }
             break;
         case OP_READ_ISP:
+            verbose_print("0x80: exec_ops: %13s %02x %02x", "READ_ISP", n, ops[2]);
             d = 0;
             ISP_DAT_IN;
             while (0 < n--) {
@@ -1021,6 +1079,7 @@ void exec_ops(uint8_t *ops, int len)
             }
             break;
         case OP_WRITE_ISP:
+            verbose_print("0x80: exec_ops: %13s %02x %02x", "WRITE_ISP", n, ops[2]);
             ISP_DAT_OUT;
             while (0 < n--) {
                 d = ops[2];
@@ -1038,25 +1097,34 @@ void exec_ops(uint8_t *ops, int len)
             DELAY3;  // XXX
             break;
         case OP_READ_ISP_BITS:
+            verbose_print("0x80: exec_ops: %13s %02x %02x", "READ_ISP_BITS", n, ops[2]);
             // not implemented yet
             break;
         case OP_WRITE_ISP_BITS:
+            verbose_print("0x80: exec_ops: %13s %02x %02x", "WRITE_ISP_BITS", n, ops[2]);
             // not implemented yet
             break;
         case OP_DELAY_US:
+            verbose_print("0x80: exec_ops: %13s %02x", "DELAY_US", n);
             while (0 < n--)
               _delay_us(1);
             break;
         case OP_DELAY_10US:
+            verbose_print("0x80: exec_ops: %13s %02x", "DELAY_10US", n);
             while (0 < n--)
               _delay_us(10);
             break;
         case OP_DELAY_MS:
+            verbose_print("0x80: exec_ops: %13s %02x", "DELAY_MS", n);
             while (0 < n--)
               _delay_ms(1);
             break;
         case OP_REPLY:
+            verbose_print("0x80: exec_ops: %13s %02x", "REPLAY", n);
             usart_tx_b(n);
+            break;
+        default:
+            verbose_print("0x80: exec_ops: %13s %02x", "???", n);
             break;
         }
         ops += 2;
