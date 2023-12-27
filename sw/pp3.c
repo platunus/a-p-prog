@@ -413,11 +413,11 @@ int setCPUtype(char* cpu)
     }
     debug_print("File open\n");
     while ((read = getlinex(&line, &len, sf)) != -1) {
-        verbose_print("\nRead %d chars: %s",read,line);
+        dump_print("\nRead %d chars: %s",read,line);
         if (line[0] != '#') {
             sscanf(line,"%s %d %d %x %x %s", (char*)&read_cpu_type,
                     &read_flash_size,&read_page_size,&read_id,&read_mask,(char*)&read_algo_type);
-            verbose_print("\n*** %s,%d,%d,%x,%x,%s", read_cpu_type,
+            dump_print("\n*** %s,%d,%d,%x,%x,%s", read_cpu_type,
                        read_flash_size, read_page_size, read_id, read_mask, read_algo_type);
             if (strcmp(read_cpu_type,cpu) == 0) {
                 flash_size = read_flash_size;
@@ -1045,7 +1045,7 @@ int parse_hex(char * filename, unsigned char * progmem, unsigned char * config)
 
     debug_print("File open\n");
     while ((read = getlinex(&line, &len, sf)) != -1) {
-        debug_print("\nRead %d chars: %s",read,line);
+        dump_print("\nRead %d chars: %s",read,line);
         if (line[0] != ':') {
             info_print("--- : invalid\n");
             return -1;
@@ -1054,7 +1054,7 @@ int parse_hex(char * filename, unsigned char * progmem, unsigned char * config)
         sscanf(line+3, "%4X", &line_address);
         sscanf(line+7, "%2X", &line_type);
         effective_address = line_address+(65536*line_address_offset);
-        debug_print("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x, EFF 0x%6.6x\n",
+        dump_print("Line len %d B, type %d, address 0x%4.4x offset 0x%4.4x, EFF 0x%6.6x\n",
                    line_len,line_type,line_address,line_address_offset,effective_address);
         if (line_type == 0) {
             for (i = 0; i < line_len; i++) {
@@ -1062,24 +1062,24 @@ int parse_hex(char * filename, unsigned char * progmem, unsigned char * config)
                 line_content[i] = temp;
             }
             if (effective_address < flash_size) {
-                debug_print("PM ");
+                dump_print("PM ");
                 for (i = 0; i < line_len; i++)
                     progmem[effective_address+i] = line_content[i];
             }
             if ((line_address_offset == 0x30) &&
                 ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|
                  (chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|(chip_family==CF_P18F_Qxx))) {
-                debug_print("CB ");
+                dump_print("CB ");
                 for (i = 0; i < line_len; i++)
                     config[i] = line_content[i];
             }
             if ((chip_family == CF_P18F_B) && (effective_address == (flash_size-config_size))) {
-                debug_print("CB ");
+                dump_print("CB ");
                 for (i = 0; i < line_len; i++)
                     config[i] = line_content[i];
             }
             if ((line_address_offset == 0x01) && (p16_cfg == 1)) {
-                debug_print("CB ");
+                dump_print("CB ");
                 for (i = 0; i < line_len; i++) {
                     if (0 <= line_address + i - 0x0E)
                         config[line_address+i-0x0E] = line_content[i];
@@ -1090,8 +1090,8 @@ int parse_hex(char * filename, unsigned char * progmem, unsigned char * config)
             sscanf(line+9, "%4X", &line_address_offset);
         }
         for (i = 0; i < line_len; i++)
-            debug_print("%2.2X", line_content[i]);
-        debug_print("\n");
+            dump_print("%2.2X", line_content[i]);
+        dump_print("\n");
     }
     fclose(sf);
     return 0;
