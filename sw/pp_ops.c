@@ -1,19 +1,5 @@
 #include "pp3.h"
-
-enum {
-    OP_IO_MCLR = 99,
-    OP_IO_DAT,
-    OP_IO_CLK,
-    OP_READ_ISP,
-    OP_WRITE_ISP,
-    OP_READ_ISP_BITS,
-    OP_WRITE_ISP_BITS,
-    OP_DELAY_US,
-    OP_DELAY_10US,
-    OP_DELAY_MS,
-    OP_REPLY,
-    OP_NONE = 0xff,
-};
+#include "../fw/pp/fw_pp_ops.h"
 
 static uint8_t buf[278];
 static int buf_len = 0;

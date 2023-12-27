@@ -1,0 +1,16 @@
+enum {
+    OP_IO_MCLR,
+    OP_IO_DAT,
+    OP_IO_CLK,
+    OP_READ_ISP,
+    OP_WRITE_ISP,
+    OP_READ_ISP_BITS,
+    OP_WRITE_ISP_BITS,
+    OP_DELAY_US,
+    OP_DELAY_10US,
+    OP_DELAY_MS,
+    OP_REPLY,
+    OP_PARAM_SET,
+    OP_PARAM_RESET,
+    OP_NONE = 0xff,
+};

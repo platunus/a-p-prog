@@ -19,4 +19,4 @@ install: pp3
 	install -m0755 pp3 $(DESTDIR)$(PREFIX)/bin
 
 clean:
-	rm -f pp3.o pp3 
+	rm -f pp3 pp3.o pp_ops.o pp3_p18qxx.o
