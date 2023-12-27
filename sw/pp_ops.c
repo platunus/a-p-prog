@@ -1,3 +1,5 @@
+#include "pp3.h"
+
 enum {
     OP_IO_MCLR = 99,
     OP_IO_DAT,
