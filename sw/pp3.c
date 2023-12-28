@@ -767,49 +767,26 @@ int p16c_mass_erase(void)
     return 0;
 }
 
-void p16c_set_pc(unsigned long pc)
-{
-    pp_ops_write_isp_8(0x80);
-    pp_ops_delay_us(2);
-    pp_ops_write_isp_24(pc);
-}
-
 int p16c_read_page(unsigned char * data, int address, unsigned char num)
 {
-    uint8_t *p, buf[1024];
-    int i, n;
-
-    address /= 2;
+    unsigned char i;
+    address = address / 2;
     debug_print("Reading page of %d bytes at 0x%6.6x\n", num, address);
-    num /= 2;
-
-    int progress = 0;
-    while (progress < num) {
-        int chunk_size = MIN(num, 32);
-
-        pp_ops_init();
-        pp_ops_reply(0xc1);
-        p16c_set_pc(address + progress * 2);
-
-        for (i = 0; i < chunk_size; i++) {
-            pp_ops_write_isp_8(0xfe);  // increment
-            //pp_ops_delay_us(2);
-            pp_ops_read_isp(3);
-        }
-
-        n = sizeof(buf);
-        pp_ops_exec(buf, &n);
-
-        p = &buf[1];
-        for (i = 0; i < chunk_size; i++) {
-            uint32_t t = ((uint32_t)p[0] << 15) | ((uint32_t)(p[1] << 7) | (p[2] >> 1));
-            p += 3;
-            *data++ = (t >> 0) & 0xff;
-            *data++ = (t >> 8) & 0xff;
-        }
-
-        progress += chunk_size;
+    putByte(0x41);
+    putByte(0x04);
+    putByte(num/2);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    getByte();
+    for (i = 0; i < num; i++) {
+        *data++ = getByte();
     }
+    /*
+    for (i = 0; i < num; i++) {
+        debug_print("%2.2x ", data[i]);
+    }
+    */
 
     return 0;
 }
@@ -887,65 +864,33 @@ int p18q_write_single_cfg(unsigned char data1, unsigned char data2, int address)
     return 0;
 }
 
-int p18q_write_byte_cfg(unsigned char data, int address)
+int p18q_write_page(unsigned char * data, int address, unsigned char num)
 {
-    uint8_t buf[1];
-    int n;
-
-    pp_ops_init();
-    p16c_set_pc(address);
-    pp_ops_write_isp_8(0xe0);
-    pp_ops_delay_us(2);
-    pp_ops_write_isp_24(data);
-    pp_ops_delay_ms(11);
-    pp_ops_reply(0xc5);
-
-    n = sizeof(buf);
-    pp_ops_exec(buf, &n);
-
-    return 0;
-}
-
-int p18q_write_page(unsigned char *data, int address, unsigned char num)
-{
-    uint8_t *p, buf[1024];
-    int i, n;
-
-    address /= 2;
-    debug_print("Writing A page of %d bytes at 0x%6.6x\n", num, address);
-
-    int empty = 1;
+    unsigned char i, empty;
+    address = address / 2;
+    empty = 1;
     for (i = 0; i < num; i = i + 2) {
         if	((data[i]!=0xFF)|(data[i+1]!=0xFF))
             empty = 0;
     }
+    debug_print( "Writing A page of %d bytes at 0x%6.6x\n", num, address);
     if (empty) {
         verbose_print("~");
         return 0;
     }
+    putByte(0x46);
+    putByte(4 + num);
+    putByte(num);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    for (i = 0; i < num; i++) {
+        putByte(data[i]);
 
-
-    pp_ops_init();
-    p16c_set_pc(address);
-    for (i = 0; i < num; i += 2) {
-        uint32_t t = ((uint32_t)data[i + 1] << 8) | ((uint32_t)data[i + 0] << 0);
-        pp_ops_write_isp_8(0xe0);
-        //pp_ops_delay_us(2);
-        pp_ops_write_isp_24(t);
-        pp_ops_delay_us(75);
-        if ((i % 32) == 30) {
-            pp_ops_reply(0xc6);
-            n = sizeof(buf);
-            pp_ops_exec(buf, &n);
-            pp_ops_init();
-        }
+        // Without this delay Arduino Leonardo's USB serial might be stalled
+        sleep_us(5);
     }
-    if ((i % 32) != 0) {
-        pp_ops_reply(0xc6);
-        n = sizeof(buf);
-        pp_ops_exec(buf, &n);
-    }
-
+    getByte();
     return 0;
 }
 
@@ -961,53 +906,20 @@ int p16c_write_cfg(void)
 
 int p18q_read_cfg(unsigned char * data, int address, unsigned char num)
 {
-    uint8_t *p, buf[1024];
-    int i, n;
-
+    unsigned char i;
     debug_print( "Reading config of %d bytes at 0x%6.6x\n", num, address);
-
-    pp_ops_init();
-    pp_ops_reply(0xc7);
-    p16c_set_pc(address);
-    for (i=0; i < num; i++) {
-        pp_ops_write_isp_8(0xfe);
-        pp_ops_delay_us(2);
-        pp_ops_read_isp(3);
-        pp_ops_delay_us(2);
-    }
-    n = sizeof(buf);
-    pp_ops_exec(buf, &n);
-
-    p = &buf[1];
+    putByte(0x47);
+    putByte(0x04);
+    putByte(num);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    getByte();
     for (i = 0; i < num; i++) {
-        uint32_t t = ((uint32_t)p[0] << 15) | ((uint32_t)(p[1] << 7) | (p[2] >> 1));
-        p += 3;
-        *data++ = t & 0xff;
+        *data++ = getByte();
     }
-
-    return 0;
-}
-
-unsigned char p16c_enter_progmode(void)
-{
-    pp_ops_init();
-
-    // acquire_isp_dat_clk();
-    pp_ops_io_dat_out(0);
-    pp_ops_io_clk_out(0);
-
-    pp_ops_io_mclr(0);
-    pp_ops_delay_us(300);
-
-    uint8_t buf[] = { 0x4d, 0x43, 0x48, 0x50 };
-    pp_ops_write_isp(buf, sizeof(buf));
-    pp_ops_delay_us(300);
-    pp_ops_reply(0xc0);
-
-    int n;
-    n = sizeof(buf);
-    pp_ops_exec(buf, &n);
-    debug_print("%s: n=%d, replay=0x%02x\n", __func__, n, buf[0]);
+    // for (i = 0; i < num; i++)
+    //     debug_print("%2.2x ", data[i]);
 
     return 0;
 }
@@ -1018,12 +930,18 @@ int prog_enter_progmode(void)
         return cf->enter_progmode();
 
     debug_print("Entering programming mode\n");
-
-    if (chip_family==CF_P16F_C) p16c_enter_progmode();
-    else if (chip_family==CF_P18F_F) p16c_enter_progmode();
-    else if (chip_family==CF_P18F_Q) p16c_enter_progmode();
-    else
-        printf("Error %s is not implemented\n", __func__);
+    if (chip_family==CF_P16F_A) putByte(0x01);
+    else if (chip_family==CF_P16F_B) putByte(0x01);
+    else if (chip_family==CF_P16F_D) putByte(0x01);
+    else if (chip_family==CF_P18F_A) putByte(0x10);
+    else if (chip_family==CF_P18F_B) putByte(0x10);
+    else if (chip_family==CF_P18F_D) putByte(0x10);
+    else if (chip_family==CF_P18F_E) putByte(0x10);
+    else if (chip_family==CF_P16F_C) putByte(0x40);
+    else if (chip_family==CF_P18F_F) putByte(0x40);
+    else if (chip_family==CF_P18F_Q) putByte(0x40);
+    putByte(0x00);
+    getByte();
     return 0;
 }
 
@@ -1033,26 +951,9 @@ int prog_exit_progmode(void)
         return cf->exit_progmode();
 
     debug_print( "Exiting programming mode\n");
-
-    pp_ops_init();
-
-    // release_isp_dat_clk();
-    pp_ops_io_dat_in();
-    pp_ops_io_clk_in();
-
-    pp_ops_io_mclr(1);
-    pp_ops_delay_ms(30);
-    pp_ops_io_mclr(0);
-    pp_ops_delay_ms(30);
-    pp_ops_io_mclr(1);
-    pp_ops_reply(0x82);
-
-    int n;
-    uint8_t buf[1];
-    n = sizeof(buf);
-    pp_ops_exec(buf, &n);
-    debug_print("%s: n=%d, replay=0x%02x\n", __func__, n, buf[0]);
-
+    putByte(0x02);
+    putByte(0x00);
+    getByte();
     return 0;
 }
 
@@ -1065,7 +966,6 @@ int prog_get_device_id(void)
 {
     unsigned char mem_str[10];
     unsigned int devid;
-
     debug_print("getting ID for family %d\n",chip_family);
     if (cf)
         return cf->get_device_id();
