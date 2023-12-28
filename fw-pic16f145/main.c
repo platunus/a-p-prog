@@ -1,4 +1,7 @@
 /*
+ * a-p-prog FW for PIC 16F14x
+ */
+/*
  * USB CDC-ACM Demo
  *
  * This file may be used by anyone for any purpose and may be used as a
@@ -19,204 +22,92 @@
  * 2014-05-12
  */
 
-#include "usb.h"
-#include <xc.h>
+#include <common.h>
+
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
+
+#include "usb.h"
 #include "usb_config.h"
 #include "usb_ch9.h"
 #include "usb_cdc.h"
 #include "hardware.h"
 
-#ifdef MULTI_CLASS_DEVICE
-static uint8_t cdc_interfaces[] = { 0 };
-#endif
-
-static void send_string_sync(uint8_t endpoint, const char *str)
-{
-    char *in_buf = (char*) usb_get_in_buffer(endpoint);
-
-    while (usb_in_endpoint_busy(endpoint))
-        ;
-
-    strcpy(in_buf, str);
-    /* Hack: Get the length from strlen(). This is inefficient, but it's
-     * just a demo. strlen()'s return excludes the terminating NULL. */
-    usb_send_in_buffer(endpoint, strlen(in_buf));
-}
-
 int main(void)
 {
+    int turn_on_led = 0;
+
+    ANSELA = 0;
+    ANSELC = 0;
 
     hardware_init();
-
-#ifdef MULTI_CLASS_DEVICE
-    cdc_set_interface_list(cdc_interfaces, sizeof(cdc_interfaces));
-#endif
     usb_init();
+    pp_init(usb_send_byte);
 
-    uint8_t char_to_send = 'A';
-    bool send = true;
-    bool loopback = false;
+    // Initialize the LED (turn off)
+    LAT(FW_PP_LED) = 1;
+    TRIS(FW_PP_LED) = 0;
 
     while (1) {
-
-        /* Send data to the PC */
-        if (usb_is_configured() &&
-            !usb_in_endpoint_halted(2) &&
-            !usb_in_endpoint_busy(2) && send) {
-
-            int i;
-            unsigned char *buf = usb_get_in_buffer(2);
-
-            for (i = 0; i < 16; i++) {
-                buf[i] = char_to_send++;
-                if (char_to_send > 'Z')
-                    char_to_send = 'A';
+        if (0 < turn_on_led) {
+            if (turn_on_led-- == 1) {
+                LAT(FW_PP_LED) = 1;
+            } else {
+                LAT(FW_PP_LED) = 0;
             }
-            buf[i++] = '\r';
-            buf[i++] = '\n';
-            usb_send_in_buffer(2, i);
         }
 
-        /* Send data to the PC (CDC 2) */
-        if (usb_is_configured() &&
-            !usb_in_endpoint_halted(4) &&
-            !usb_in_endpoint_busy(4) && send) {
-
-            int i;
-            unsigned char *buf = usb_get_in_buffer(4);
-
-            for (i = 0; i < 16; i++) {
-                buf[i] = char_to_send++;
-                if (char_to_send > 'Z')
-                    char_to_send = 'A';
-            }
-            buf[i++] = '\r';
-            buf[i++] = '\n';
-            usb_send_in_buffer(4, i);
-        }
+        if (!usb_is_configured())
+            continue;
 
         /* Handle data received from the host */
-        if (usb_is_configured() &&
-            !usb_out_endpoint_halted(2) &&
-            usb_out_endpoint_has_data(2)) {
+        if (!usb_out_endpoint_halted(2) && usb_out_endpoint_has_data(2)) {
             const unsigned char *out_buf;
             size_t out_buf_len;
-            int i;
 
-            /* Check for an empty transaction. */
+            turn_on_led = 5;
             out_buf_len = usb_get_out_buffer(2, &out_buf);
-            if (out_buf_len <= 0)
-                goto empty;
+            pp_process(out_buf, out_buf_len);
 
-            if (send) {
-                /* Stop sendng if a key was hit. */
-                send = false;
-                send_string_sync(2, "Data send off ('h' for help)\r\n");
-            }
-            else if (loopback) {
-                /* Loop data back to the PC */
-
-                /* Wait until the IN endpoint can accept it */
-                while (usb_in_endpoint_busy(2))
-                    ;
-
-                /* Copy contents of OUT buffer to IN buffer
-                 * and send back to host. */
-                memcpy(usb_get_in_buffer(2), out_buf, out_buf_len);
-                usb_send_in_buffer(2, out_buf_len);
-
-                /* Send a zero-length packet if the transaction
-                 * length was the same as the endpoint
-                 * length. This is for demo purposes. In real
-                 * life, you only need to do this if the data
-                 * you're transferring ends on a multiple of
-                 * the endpoint length. */
-                if (out_buf_len == EP_2_LEN) {
-                    /* Wait until the IN endpoint can accept it */
-                    while (usb_in_endpoint_busy(2))
-                        ;
-                    usb_send_in_buffer(2, 0);
-                }
-
-                /* Scan for ~ character to end loopback mode */
-                for (i = 0; i < out_buf_len; i++) {
-                    if (out_buf[i] == '~') {
-                        loopback = false;
-                        send_string_sync(2, "\r\nLoopback off ('h' for help)\r\n");
-                        break;
-                    }
-                }
-            }
-            else {
-                /* Scan for commands if not in loopback or
-                 * send mode.
-                 *
-                 * This is a hack. One should really scan the
-                 * entire string. In this case, since this
-                 * is a demo, assume that the user is using
-                 * a terminal program and typing the input,
-                 * all but ensuring the data will come in
-                 * single-character transactions. */
-                if (out_buf[0] == 'h' || out_buf[0] == '?') {
-                    /* Show help.
-                     * Make sure to not try to send more
-                     * than 63 bytes of data in one
-                     * transaction */
-                    send_string_sync(2,
-                                     "\r\nHelp:\r\n"
-                                     "\ts: send data\r\n"
-                                     "\tl: loopback\r\n");
-                    send_string_sync(2,
-                                     "\tn: send notification\r\n"
-                                     "\th: help\r\n");
-                }
-                else if (out_buf[0] == 's')
-                    send = true;
-                else if (out_buf[0] == 'l') {
-                    loopback = true;
-                    send_string_sync(2, "loopback enabled; press ~ to disable\r\n");
-                }
-                else if (out_buf[0] == 'n') {
-                    /* Send a Notification on Endpoint 1 */
-                    struct cdc_serial_state_notification *n =
-                        (struct cdc_serial_state_notification *)
-                        usb_get_in_buffer(1);
-
-                    n->header.REQUEST.bmRequestType = 0xa1;
-                    n->header.bNotification = CDC_SERIAL_STATE;
-                    n->header.wValue = 0;
-                    n->header.wIndex = 1; /* Interface */
-                    n->header.wLength = 2;
-                    n->data.serial_state = 0; /* Zero the whole bit mask */
-                    n->data.bits.bRxCarrier = 1;
-                    n->data.bits.bTxCarrier = 1;
-                    n->data.bits.bBreak = 0;
-                    n->data.bits.bRingSignal = 0;
-                    n->data.bits.bFraming = 0;
-                    n->data.bits.bParity = 0;
-                    n->data.bits.bOverrun = 0;
-
-                    /* Wait for the endpoint to be free */
-                    while (usb_in_endpoint_busy(1))
-                        ;
-
-                    /* Send to to host */
-                    usb_send_in_buffer(1, sizeof(*n));
-
-                    send_string_sync(2, "Notification Sent\r\n");
-                }
-            }
-        empty:
             usb_arm_out_endpoint(2);
         }
-
-#ifndef USB_USE_INTERRUPTS
-        usb_service();
-#endif
     }
 
     return 0;
+}
+
+void usb_send_data(uint8_t ep, uint8_t *data, size_t len)
+{
+    unsigned char *buf;
+
+    while (usb_in_endpoint_busy(ep))
+        ;
+    buf = usb_get_in_buffer(ep);
+    memcpy(buf, data, len);
+    usb_send_in_buffer(ep, len);
+}
+
+void usb_send_byte(uint8_t data)
+{
+    usb_send_data(2, &data, 1);
+}
+
+void usb_send_debug_string(char *str)
+{
+    usb_send_data(4, (uint8_t*)str, strlen(str));
+}
+
+void usb_send_debug_hex(uint32_t value)
+{
+    static const char *hex = "0123456789ABCDEF";
+    uint8_t buf[8];
+    unsigned int c = 0;
+    do {
+        buf[sizeof(buf) - ++c] = hex[value & 0xf];
+        value >>= 4;
+    } while (value);
+    usb_send_data(4, &buf[sizeof(buf) - c], c);
 }
 
 /* Callbacks. These function names are set in usb_config.h. */
@@ -265,7 +156,7 @@ int8_t app_unknown_setup_request_callback(const struct setup_packet *setup)
      * MULTI_CLASS_DEVICE is defined in usb_config.h and call all
      * appropriate device class setup request functions here.
      */
-    return process_cdc_setup_request(setup);
+    return (int8_t)process_cdc_setup_request(setup);
 }
 
 int16_t app_unknown_get_descriptor_callback(const struct setup_packet *pkt, const void **descriptor)
@@ -353,25 +244,7 @@ int8_t app_send_break_callback(uint8_t interface, uint16_t duration)
     return 0;
 }
 
-
-#ifdef _PIC14E
-#if __XC8_VERSION >= 2000
 void __interrupt() isr()
-#else
-void interrupt isr()
-#endif
 {
     usb_service();
 }
-#elif _PIC18
-
-#ifdef __XC8
-void interrupt high_priority isr()
-{
-    usb_service();
-}
-#elif _PICC18
-#error need to make ISR
-#endif
-
-#endif

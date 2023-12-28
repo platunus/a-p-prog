@@ -28,6 +28,7 @@
       <itemPath>../usb_config.h</itemPath>
       <itemPath>../m-stack/apps/common/hardware.c</itemPath>
       <itemPath>../m-stack/apps/common/hardware.h</itemPath>
+      <itemPath>../pp.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
