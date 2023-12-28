@@ -1,3 +1,5 @@
+#ifndef __FW_PP_OPS_H__
+#define __FW_PP_OPS_H__
 
 #define PP_EXEC_OPS
 #define PP_EXEC_OPS_RW_BITS
@@ -37,3 +39,4 @@ enum {
     PP_PARAM_NUM_PARAMS  // number of parameters
 };
 #endif  // PP_EXEC_OPS
+#endif  // __FW_PP_OPS_H__
