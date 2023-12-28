@@ -1,0 +1,3 @@
+[submodule "fw-pic16f145/m-stack"]
+	path = fw-pic16f145/m-stack
+	url = https://github.com/hanyazou/m-stack.git
