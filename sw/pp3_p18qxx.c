@@ -1,4 +1,5 @@
 #include "pp3.h"
+#include <stdlib.h>
 
 #define CONFIG_ADDRESS 0x300000
 
@@ -81,6 +82,44 @@ static int p18qxx_mass_erase(void)
     return 0;
 }
 
+#if defined(PP_EXEC_OPS_RW_BITS)
+static int p16c_read_page(uint8_t *data, int address, int num)
+{
+    uint8_t buf[1024];
+    int i, n;
+
+    num = num / 2 * 2;
+    debug_print("Reading page of %d bytes at 0x%6.6x\n", num, address);
+
+    pp_ops_init();
+    pp_ops_param_reset();
+    pp_ops_param_set(PP_PARAM_CLK_DELAY, 1);
+    pp_ops_param_set(PP_PARAM_CMD1, 0xfe);
+    pp_ops_param_set(PP_PARAM_CMD1_LEN, 8);
+    pp_ops_param_set(PP_PARAM_DELAY1, 2);
+    pp_ops_param_set(PP_PARAM_PREFIX_LEN, 7);
+    pp_ops_param_set(PP_PARAM_DATA_LEN, 16);
+    pp_ops_param_set(PP_PARAM_POSTFIX_LEN, 1);
+    pp_ops_reply(0xc1);
+    n = sizeof(buf);
+    pp_ops_exec(buf, &n);
+
+    pp_ops_init();
+    pp_ops_reply(0xc1);
+    p16c_set_pc(address);
+    pp_ops_read_isp_bits(num / 2);
+
+    n = sizeof(buf);
+    pp_ops_exec(buf, &n);
+
+    for (i = 0; i < num; i += 2) {
+        *data++ = buf[i + 2];
+        *data++ = buf[i + 1];
+    }
+
+    return 0;
+}
+#else  // PP_EXEC_OPS_RW_BITS
 static int p16c_read_page(uint8_t *data, int address, int num)
 {
     uint8_t *p, buf[1024];
@@ -119,7 +158,46 @@ static int p16c_read_page(uint8_t *data, int address, int num)
 
     return 0;
 }
+#endif  // PP_EXEC_OPS_RW_BITS
 
+#if defined(PP_EXEC_OPS_RW_BITS)
+static int p18q_write_page(uint8_t *data, int address, int num)
+{
+    uint8_t buf[1024];
+    int i, n;
+
+    debug_print("Writing A page of %d bytes at 0x%6.6x\n", num, address);
+
+    pp_ops_init();
+    pp_ops_param_reset();
+    pp_ops_param_set(PP_PARAM_CLK_DELAY, 1);
+    pp_ops_param_set(PP_PARAM_CMD1, 0xe0);
+    pp_ops_param_set(PP_PARAM_CMD1_LEN, 8);
+    pp_ops_param_set(PP_PARAM_DELAY1, 2);
+    pp_ops_param_set(PP_PARAM_PREFIX_LEN, 7);
+    pp_ops_param_set(PP_PARAM_DATA_LEN, 16);
+    pp_ops_param_set(PP_PARAM_POSTFIX_LEN, 1);
+    pp_ops_param_set(PP_PARAM_DELAY3, 75);
+    pp_ops_reply(0xc6);
+
+    n = sizeof(buf);
+    pp_ops_exec(buf, &n);
+
+    for (i = 0; i < num; i += 2) {
+        buf[i + 0] = data[i + 1];
+        buf[i + 1] = data[i + 0];
+    }
+    pp_ops_init();
+    p16c_set_pc(address);
+    pp_ops_write_isp_bits(buf, num);
+    pp_ops_reply(0xc6);
+
+    n = sizeof(buf);
+    pp_ops_exec(buf, &n);
+
+    return 0;
+}
+#else  // PP_EXEC_OPS_RW_BITS
 static int p18q_write_page(uint8_t *data, int address, int num)
 {
     uint8_t *p, buf[1024];
@@ -161,6 +239,7 @@ static int p18q_write_page(uint8_t *data, int address, int num)
 
     return 0;
 }
+#endif  // PP_EXEC_OPS_RW_BITS
 
 static int p18q_read_config(uint8_t *data, int num)
 {

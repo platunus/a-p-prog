@@ -1,9 +1,11 @@
+#include <string.h>
 #include "pp3.h"
-#include "../fw/pp/fw_pp_ops.h"
 
+#if defined(PP_EXEC_OPS)
 static uint8_t buf[278];
 static int buf_len = 0;
 static int res_len = 0;
+static uint8_t pp_params[PP_PARAM_NUM_PARAMS] = { 0 };
 
 void putByte(int byte);
 int getByte(void);
@@ -89,6 +91,38 @@ int pp_ops_write_isp(uint8_t *v, int n)
     return 0;
 }
 
+#if defined(PP_EXEC_OPS_RW_BITS)
+int pp_ops_read_isp_bits(int n)
+{
+    int bytes = (pp_params[PP_PARAM_DATA_LEN] + 7) / 8;
+    if (sizeof(buf) < buf_len + 2) {
+        return -1;
+    }
+    buf[buf_len++] = OP_READ_ISP_BITS;
+    buf[buf_len++] = n;
+    res_len += (n * bytes);
+    return 0;
+}
+
+int pp_ops_write_isp_bits(uint8_t *v, int n)
+{
+    int bytes = (pp_params[PP_PARAM_DATA_LEN] + 7) / 8;
+    n /= bytes;
+    if (sizeof(buf) < buf_len + 2 + n * bytes) {
+        return -1;
+    }
+    buf[buf_len++] = OP_WRITE_ISP_BITS;
+    buf[buf_len++] = n;
+    while (0 < n--) {
+        for (int i = 0; i < bytes; i++) {
+            buf[buf_len++] = *v++;
+        }
+    }
+
+    return 0;
+}
+#endif  // PP_EXEC_OPS_RW_BITS
+
 int pp_ops_delay_us(int n)
 {
     if (sizeof(buf) < buf_len + 2) {
@@ -122,6 +156,28 @@ int pp_ops_reply(uint8_t v)
     buf[buf_len++] = OP_REPLY;
     buf[buf_len++] = v;
     res_len++;
+    return 0;
+}
+
+int pp_ops_param_set(int param, int value)
+{
+    if (sizeof(buf) < buf_len + 3) {
+        return -1;
+    }
+    buf[buf_len++] = OP_PARAM_SET;
+    buf[buf_len++] = param;
+    buf[buf_len++] = value;
+    pp_params[param] = value;
+    return 0;
+}
+
+int pp_ops_param_reset()
+{
+    if (sizeof(buf) < buf_len + 1) {
+        return -1;
+    }
+    buf[buf_len++] = OP_PARAM_RESET;
+    memset(pp_params, 0, sizeof(pp_params));
     return 0;
 }
 
@@ -169,3 +225,4 @@ int pp_ops_write_isp_24(uint32_t v)
     buf[2] = (v >>  0) & 0xff;
     return pp_ops_write_isp(buf, 3);
 }
+#endif  // PP_EXEC_OPS

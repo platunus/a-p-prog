@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include "../fw/pp/fw_pp_ops.h"
 
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	35
@@ -57,9 +58,15 @@ extern int pp_ops_io_clk_in(void);
 extern int pp_ops_io_clk_out(int v);
 extern int pp_ops_read_isp(int n);
 extern int pp_ops_write_isp(uint8_t *v, int n);
+#if defined(PP_EXEC_OPS_RW_BITS)
+extern int pp_ops_read_isp_bits(int n);
+extern int pp_ops_write_isp_bits(uint8_t *v, int n);
+#endif
 extern int pp_ops_delay_us(int n);
 extern int pp_ops_delay_ms(int n);
 extern int pp_ops_reply(uint8_t v);
+extern int pp_ops_param_set(int param, int value);
+extern int pp_ops_param_reset(void);
 extern int pp_ops_exec(uint8_t *v, int *n);
 extern int pp_ops_write_isp_8(uint8_t v);
 extern int pp_ops_write_isp_24(uint32_t v);
