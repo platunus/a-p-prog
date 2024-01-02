@@ -39,11 +39,11 @@ void exec_ops(uint8_t *ops, int len)
         n = ops[1];
         switch (ops[0]) {
         case OP_IO_MCLR:
-            verbose_print("0x80: exec_ops: %13s %02x", "IO_MCLR", n);
+            verbose_print("0x80: exec_ops:        IO_MCLR %02x", n);
             ISP_MCLR(n & 0x01);
             break;
         case OP_IO_DAT:
-            verbose_print("0x80: exec_ops: %13s %02x", "IO_DAT", n);
+            verbose_print("0x80: exec_ops:         IO_DAT %02x", n);
             if (n & 0x02) {
                 ISP_DAT(n & 0x01);
                 ISP_DAT_OUT;
@@ -52,7 +52,7 @@ void exec_ops(uint8_t *ops, int len)
             }
             break;
         case OP_IO_CLK:
-            verbose_print("0x80: exec_ops: %13s %02x", "IO_CLK", n);
+            verbose_print("0x80: exec_ops:         IO_CLK %02x", n);
             if (n & 0x02) {
                 ISP_CLK(n & 0x01);
                 ISP_CLK_OUT;
@@ -61,7 +61,7 @@ void exec_ops(uint8_t *ops, int len)
             }
             break;
         case OP_READ_ISP:
-            verbose_print("0x80: exec_ops: %13s %02x %02x %02x %02x", "READ_ISP", n,
+            verbose_print("0x80: exec_ops:       READ_ISP %02x %02x %02x %02x", n,
                           ops[2], ops[3], ops[4]);
             d = 0;
             ISP_DAT_IN;
@@ -77,7 +77,7 @@ void exec_ops(uint8_t *ops, int len)
             }
             break;
         case OP_WRITE_ISP:
-            verbose_print("0x80: exec_ops: %13s %02x %02x %02x %02x", "WRITE_ISP", n,
+            verbose_print("0x80: exec_ops:      WRITE_ISP %02x %02x %02x %02x", n,
                           ops[2], ops[3], ops[4]);
             ISP_DAT_OUT;
             while (0 < n--) {
@@ -97,7 +97,7 @@ void exec_ops(uint8_t *ops, int len)
             break;
 #ifdef PP_EXEC_OPS_RW_BITS
         case OP_READ_ISP_BITS:
-            verbose_print("0x80: exec_ops: %13s %02x %02x", "READ_ISP_BITS", n, ops[2]);
+            verbose_print("0x80: exec_ops:  READ_ISP_BITS %02x %02x", n, ops[2]);
             while (0 < n--) {
 
                 send_bits(pp_params[PP_PARAM_CMD1], pp_params[PP_PARAM_CMD1_LEN]);
@@ -127,13 +127,13 @@ void exec_ops(uint8_t *ops, int len)
                 dummy_locks(pp_params[PP_PARAM_POSTFIX_LEN]);
                 fw_pp_ops_delay(pp_params[PP_PARAM_DELAY3]);
                 for (i = 0; i < txbuf_len; i++) {
-                    verbose_print("0x80: exec_ops: %13s tx: %02x %02x", "READ_ISP_BITS", n, txbuf[i]);
+                    verbose_print("0x80: exec_ops:  READ_ISP_BITS tx: %02x %02x", n, txbuf[i]);
                     usart_tx_b(txbuf[i]);
                 }
             }
             break;
         case OP_WRITE_ISP_BITS:
-            verbose_print("0x80: exec_ops: %13s %02x %02x", "WRITE_ISP_BITS", n, ops[2]);
+            verbose_print("0x80: exec_ops: WRITE_ISP_BITS %02x %02x", n, ops[2]);
             while (0 < n--) {
 
                 send_bits(pp_params[PP_PARAM_CMD1], pp_params[PP_PARAM_CMD1_LEN]);
@@ -147,7 +147,7 @@ void exec_ops(uint8_t *ops, int len)
                 for (i = 0; i < pp_params[PP_PARAM_DATA_LEN]; i++) {
                     if ((i % 8) == 0) {
                         d = ops[2];
-                        verbose_print("0x80: exec_ops: %13s rx: %02x %02x", "WRITE_ISP_BITS", n, d);
+                        verbose_print("0x80: exec_ops: WRITE_ISP_BITS rx: %02x %02x", n, d);
                         ops++;
                     }
                     ISP_DAT(d & 0x80);
@@ -164,36 +164,36 @@ void exec_ops(uint8_t *ops, int len)
             break;
 #endif  // PP_EXEC_OPS_RW_BITS
         case OP_DELAY_US:
-            verbose_print("0x80: exec_ops: %13s %d", "DELAY_US", n);
+            verbose_print("0x80: exec_ops:       DELAY_US %d", n);
             fw_pp_ops_delay(n);
             break;
         case OP_DELAY_10US:
-            verbose_print("0x80: exec_ops: %13s %d", "DELAY_10US", n);
+            verbose_print("0x80: exec_ops:     DELAY_10US %d", n);
             while (0 < n--)
                 fw_pp_ops_delay(10);
             break;
         case OP_DELAY_MS:
-            verbose_print("0x80: exec_ops: %13s %d", "DELAY_MS", n);
+            verbose_print("0x80: exec_ops:       DELAY_MS %d", n);
             n10 = n * 10;
             while (0 < n10--)
                 fw_pp_ops_delay(100);
             break;
         case OP_REPLY:
-            verbose_print("0x80: exec_ops: %13s %02x", "REPLAY", n);
+            verbose_print("0x80: exec_ops:         REPLAY %02x", n);
             usart_tx_b(n);
             break;
         case OP_PARAM_SET:
-            verbose_print("0x80: exec_ops: %13s pp_params[%02x] = %02x", "PARAM_SET", n, ops[2]);
+            verbose_print("0x80: exec_ops:      PARAM_SET pp_params[%02x] = %02x", n, ops[2]);
             pp_params[n] = ops[2];
             ops++;
             break;
         case OP_PARAM_RESET:
-            verbose_print("0x80: exec_ops: %13s", "PARAM_RESET", n);
+            verbose_print("0x80: exec_ops:    PARAM_RESET", n);
             memset(pp_params, 0, sizeof(pp_params));
             ops -= 1;  // no operands
             break;
         default:
-            verbose_print("0x80: exec_ops: %13s %02x", "???", n);
+            verbose_print("0x80: exec_ops:            ??? %02x", n);
             break;
         }
         ops += 2;
