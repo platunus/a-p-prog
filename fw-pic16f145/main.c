@@ -34,22 +34,42 @@
 #include "usb_cdc.h"
 #include "hardware.h"
 
+void init_uart(void)
+{
+    uint16_t brg_data;        // Baud Rate Generator setting data
+
+    //brg_data = 0x0271;        //  19200 baud @ 48MHz
+    brg_data = 0x0067;        // 115200 baud @ 48MHz
+
+    TRIS(FW_PP_UART_RX) = 1;  // Input
+    TRIS(FW_PP_UART_TX) = 0;  // Output
+    TXSTA = 0x24;             // TX enable BRGH=1
+    RCSTA = 0x90;             // Single Character RX
+    SPBRG = (brg_data >> 0) & 0xff;
+    SPBRGH = (brg_data >> 8) & 0xff;
+    BAUDCON = 0x08;           // Use 16-bit baud rate generator (BRG16 = 1)
+}
+
 int main(void)
 {
-    int turn_on_led = 0;
-
+    // Initialize HW, USB and UART
     ANSELA = 0;
     ANSELC = 0;
 
     hardware_init();
     usb_init();
-    pp_init(usb_send_byte);
+    init_uart();
 
     // Initialize the LED (turn off)
     LAT(FW_PP_LED) = 1;
     TRIS(FW_PP_LED) = 0;
 
+    int turn_on_led = 0;
+    pp_init(usb_send_byte);
     while (1) {
+        /*
+         * Blink LED if there are some activities
+         */
         if (0 < turn_on_led) {
             if (turn_on_led-- == 1) {
                 LAT(FW_PP_LED) = 1;
@@ -61,16 +81,54 @@ int main(void)
         if (!usb_is_configured())
             continue;
 
-        /* Handle data received from the host */
+        /*
+         * Handle PIC programmer packet
+         */
         if (!usb_out_endpoint_halted(2) && usb_out_endpoint_has_data(2)) {
             const unsigned char *out_buf;
             size_t out_buf_len;
 
-            turn_on_led = 5;
             out_buf_len = usb_get_out_buffer(2, &out_buf);
             pp_process(out_buf, out_buf_len);
 
             usb_arm_out_endpoint(2);
+            turn_on_led = 5;
+        }
+
+        /*
+         * Receive UART data and send to host via CDC(2)
+         */
+        if (PIR1bits.RCIF) {
+            uint8_t c;
+            if (RCSTAbits.OERR) {
+                // reset the port in case of overrun error
+                RCSTAbits.CREN = 0;
+                c = RCREG;
+                RCSTAbits.CREN = 1;
+            } else {
+                c = RCREG;
+            }
+            if (!usb_in_endpoint_halted(4) && !usb_in_endpoint_busy(4)) {
+                usb_send_data(4, &c, 1);
+            }
+            turn_on_led = 5;
+        }
+
+        /*
+         * Receive CDC(2) data from host and send out via UART
+         */
+        if (!usb_out_endpoint_halted(4) && usb_out_endpoint_has_data(4)) {
+            const unsigned char *out_buf;
+            size_t out_buf_len;
+            int i;
+            out_buf_len = usb_get_out_buffer(4, &out_buf);
+            for (i = 0; i < out_buf_len; i++) {
+                while (!PIR1bits.TXIF)
+                    ;
+                TXREG = out_buf[i];
+            }
+            usb_arm_out_endpoint(4);
+            turn_on_led = 100;
         }
     }
 

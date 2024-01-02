@@ -10,6 +10,8 @@
 #define FW_PP_LED          C2
 #define FW_PP_ISP_CLK      A5
 #define FW_PP_ISP_DAT      A4
+#define FW_PP_UART_TX      C4
+#define FW_PP_UART_RX      C5
 
 #define PORT_CAT(x, y) PORT_CAT_(x, y)
 #define PORT_CAT_(x, y) x ## y
