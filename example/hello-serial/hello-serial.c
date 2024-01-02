@@ -71,7 +71,7 @@ void main(void) {
     OSCFRQ = 0x08;	// 64MHz internal OSC
 
     // UART3 initialize
-    U3BRG = 416;        // 9600bps @ 64MHz
+    U3BRG = (_XTAL_FREQ/16)/115200+1;
     U3RXEN = 1;         // Receiver enable
     U3TXEN = 1;         // Transmitter enable
 
