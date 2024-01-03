@@ -34,6 +34,13 @@
 #include "usb_cdc.h"
 #include "hardware.h"
 
+uint8_t uart_rx_buf[32];
+uint8_t uart_rx_buf_len = 0;
+uint8_t uart_rx_flush_timer = 0;
+const uint8_t *uart_tx_buf;
+uint8_t uart_tx_buf_len = 0;
+uint8_t uart_tx_buf_head = 0;
+
 void init_uart(void)
 {
     uint16_t brg_data;        // Baud Rate Generator setting data
@@ -108,26 +115,39 @@ int main(void)
             } else {
                 c = RCREG;
             }
-            if (!usb_in_endpoint_halted(4) && !usb_in_endpoint_busy(4)) {
-                usb_send_data(4, &c, 1);
+            uart_rx_buf[uart_rx_buf_len++] = c;
+            if (sizeof(uart_rx_buf) <= uart_rx_buf_len) {
+
+                if (!usb_in_endpoint_halted(4)) {
+                    usb_send_data(4, uart_rx_buf, uart_rx_buf_len);
+                }
+                uart_rx_buf_len = 0;
+            } else {
+                uart_rx_flush_timer = 100;
             }
             turn_on_led = 5;
+        }
+        if (0 < uart_rx_flush_timer) {
+            if (uart_rx_flush_timer-- == 1 && 0 < uart_rx_buf_len) {
+                usb_send_data(4, uart_rx_buf, uart_rx_buf_len);
+                uart_rx_buf_len = 0;
+            }
         }
 
         /*
          * Receive CDC(2) data from host and send out via UART
          */
         if (!usb_out_endpoint_halted(4) && usb_out_endpoint_has_data(4)) {
-            const unsigned char *out_buf;
-            size_t out_buf_len;
-            int i;
-            out_buf_len = usb_get_out_buffer(4, &out_buf);
-            for (i = 0; i < out_buf_len; i++) {
-                while (!PIR1bits.TXIF)
-                    ;
-                TXREG = out_buf[i];
+            uart_tx_buf_len = usb_get_out_buffer(4, &uart_tx_buf);
+            uart_tx_buf_head = 0;
+            turn_on_led = 100;
+        }
+        if (PIR1bits.TXIF && 0 < uart_tx_buf_len) {
+            TXREG = uart_tx_buf[uart_tx_buf_head++];
+            if (uart_tx_buf_len <= uart_tx_buf_head) {
+                uart_tx_buf_len = 0;
+                usb_arm_out_endpoint(4);
             }
-            usb_arm_out_endpoint(4);
             turn_on_led = 100;
         }
     }
