@@ -40,8 +40,13 @@ uint8_t uart_rx_flush_timer = 0;
 const uint8_t *uart_tx_buf;
 uint8_t uart_tx_buf_len = 0;
 uint8_t uart_tx_buf_head = 0;
+uint8_t turn_on_led = 0;
 
-void init_uart(void)
+#define TICK_HZ 91
+#define LED_TICKS 5
+#define UART_FLUSH_TICKS 2
+
+void uart_init(void)
 {
     uint16_t brg_data;        // Baud Rate Generator setting data
 
@@ -57,32 +62,54 @@ void init_uart(void)
     BAUDCON = 0x08;           // Use 16-bit baud rate generator (BRG16 = 1)
 }
 
+void timer_init(void)
+{
+    // Timer 1
+    TMR1CS1 = 0;            // Clock source is Fosc/4
+    TMR1CS0 = 0;
+    T1CKPS1 = 0;            // Prescale 1:2
+    T1CKPS0 = 1;
+    TMR1ON = 1;             // Enable
+
+    TMR1IF = 0;             // Clear interrupt flag
+
+    TMR1IE = 1;             // Enable time 1 interrupt
+    PEIE = 1;               // Enable peripheral interrupt
+}
+
+void led_init(void)
+{
+    // Initialize the LED (turn off)
+    LAT(FW_PP_LED) = 1;
+    TRIS(FW_PP_LED) = 0;
+}
+
 int main(void)
 {
-    // Initialize HW, USB and UART
-    ANSELA = 0;
+    /*
+     * Initialize
+     */
+    ANSELA = 0;             // Disable all analog function
     ANSELC = 0;
 
     hardware_init();
     usb_init();
-    init_uart();
+    uart_init();
+    timer_init();
+    led_init();
 
-    // Initialize the LED (turn off)
-    LAT(FW_PP_LED) = 1;
-    TRIS(FW_PP_LED) = 0;
-
-    int turn_on_led = 0;
     pp_init(usb_send_byte);
+
+    GIE = 1;                // Enable interrupt
+
     while (1) {
         /*
          * Blink LED if there are some activities
          */
         if (0 < turn_on_led) {
-            if (turn_on_led-- == 1) {
-                LAT(FW_PP_LED) = 1;
-            } else {
-                LAT(FW_PP_LED) = 0;
-            }
+            LAT(FW_PP_LED) = 0;
+        } else {
+            LAT(FW_PP_LED) = 1;
         }
 
         if (!usb_is_configured())
@@ -99,7 +126,7 @@ int main(void)
             pp_process(out_buf, out_buf_len);
 
             usb_arm_out_endpoint(2);
-            turn_on_led = 5;
+            turn_on_led = LED_TICKS;
         }
 
         /*
@@ -123,24 +150,22 @@ int main(void)
                 }
                 uart_rx_buf_len = 0;
             } else {
-                uart_rx_flush_timer = 100;
+                uart_rx_flush_timer = UART_FLUSH_TICKS;
             }
-            turn_on_led = 5;
+            turn_on_led = LED_TICKS;
         }
-        if (0 < uart_rx_flush_timer) {
-            if (uart_rx_flush_timer-- == 1 && 0 < uart_rx_buf_len) {
-                usb_send_data(4, uart_rx_buf, uart_rx_buf_len);
-                uart_rx_buf_len = 0;
-            }
+        if (uart_rx_flush_timer == 0 && 0 < uart_rx_buf_len) {
+            usb_send_data(4, uart_rx_buf, uart_rx_buf_len);
+            uart_rx_buf_len = 0;
         }
 
         /*
          * Receive CDC(2) data from host and send out via UART
          */
-        if (!usb_out_endpoint_halted(4) && usb_out_endpoint_has_data(4)) {
+        if (uart_tx_buf_len == 0 && !usb_out_endpoint_halted(4) && usb_out_endpoint_has_data(4)) {
             uart_tx_buf_len = usb_get_out_buffer(4, &uart_tx_buf);
             uart_tx_buf_head = 0;
-            turn_on_led = 100;
+            turn_on_led = LED_TICKS;
         }
         if (PIR1bits.TXIF && 0 < uart_tx_buf_len) {
             TXREG = uart_tx_buf[uart_tx_buf_head++];
@@ -148,7 +173,7 @@ int main(void)
                 uart_tx_buf_len = 0;
                 usb_arm_out_endpoint(4);
             }
-            turn_on_led = 100;
+            turn_on_led = LED_TICKS;
         }
     }
 
@@ -324,5 +349,14 @@ int8_t app_send_break_callback(uint8_t interface, uint16_t duration)
 
 void __interrupt() isr()
 {
+    // Periodic timer interrupt
+    if (TMR1IF) {
+        if (0 < turn_on_led)
+            turn_on_led--;
+        if (0 < uart_rx_flush_timer)
+            uart_rx_flush_timer--;
+        TMR1IF = 0;
+    }
+
     usb_service();
 }
