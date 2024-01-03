@@ -344,6 +344,26 @@ int8_t app_set_control_line_state_callback(uint8_t interface,
 
 int8_t app_send_break_callback(uint8_t interface, uint16_t duration)
 {
+    /*
+     * Universal Serial Bus Communications Class Subclass Specification for PSTN Devices Rev 1.2
+     * 6.3.13 SendBreak
+     * The wValue field contains the length of time, in milliseconds, of the break signal. If
+     * wValue contains a value of FFFFh, then the device will send a break until another
+     * SendBreak request is received with the wValue of 0000h.
+     */
+    if (interface == 2 && duration != 0) {
+        /*
+         * TXSTA: TRANSMIT STATUS AND CONTROL REGISTER
+         * bit 3: SENDB: Send Break Character bit
+         * Asynchronous mode:
+         * 1 = Send Sync Break on next transmission (cleared by hardware upon completion)
+         * 0 = Sync Break transmission completed
+         */
+        SENDB = 1;
+        while (!PIR1bits.TXIF)
+            ;
+        TXREG = 0x00;
+    }
     return 0;
 }
 
