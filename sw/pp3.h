@@ -79,3 +79,20 @@ extern int pp_ops_write_isp_24(uint32_t v);
             flsprintf(stdout, fmt); } while (0)
 #define dump_print(fmt ...) do { if (verbose > 4) \
             flsprintf(stdout, fmt); } while (0)
+
+// CF_P16F_A
+int cf_p16f_a_exit_progmode(void);
+
+// CF_P16F_C
+int cf_p16f_c_set_pc(unsigned long pc);
+int cf_p16f_c_enter_progmode(void);
+int cf_p16f_c_read_page(uint8_t *data, int address, int num);
+
+// CF_P18F_Q
+int cf_p18f_q_write_page(uint8_t *data, int address, int num);
+int cf_p18f_q_read_config(uint8_t *data, int num);
+int cf_p18f_q_write_config(uint8_t *data, int size);
+int cf_p18f_q_get_device_id(void);
+
+// CF_P18F_Qxx
+int cf_p18f_qxx_mass_erase(void);
