@@ -61,6 +61,14 @@ extern int pp_ops_write_isp(uint8_t *v, int n);
 #if defined(PP_EXEC_OPS_RW_BITS)
 extern int pp_ops_read_isp_bits(int n);
 extern int pp_ops_write_isp_bits(uint8_t *v, int n);
+extern int pp_ops_isp_send_msb_multi(uint32_t v, int len, int n);
+extern int pp_ops_isp_send_multi(uint32_t v, int len, int n);
+static inline int pp_ops_isp_send_msb(uint32_t v, int len) {
+    return pp_ops_isp_send_msb_multi(v, len, 1);
+}
+static inline int pp_ops_isp_send(uint32_t v, int len) {
+    return pp_ops_isp_send_multi(v, len, 1);
+}
 #endif
 extern int pp_ops_delay_us(int n);
 extern int pp_ops_delay_ms(int n);
@@ -70,6 +78,12 @@ extern int pp_ops_param_reset(void);
 extern int pp_ops_exec(uint8_t *v, int *n);
 extern int pp_ops_write_isp_8(uint8_t v);
 extern int pp_ops_write_isp_24(uint32_t v);
+
+extern uint32_t pp_util_revert_bit_order(uint32_t v, int n);
+
+#define pp_ops(f) do { int res = pp_ops_ ## f; if (res != 0) { \
+        return res; \
+    } } while (0)
 
 #define info_print(fmt ...) do { if (verbose > 0) \
             flsprintf(stdout, fmt); } while (0)

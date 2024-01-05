@@ -122,6 +122,35 @@ int pp_ops_write_isp_bits(uint8_t *v, int n)
 
     return 0;
 }
+
+int pp_ops_isp_send_msb_multi(uint32_t v, int len, int n)
+{
+    pp_ops(param_reset());
+    pp_ops(param_set(PP_PARAM_CLK_DELAY, 1));
+    pp_ops(param_set(PP_PARAM_DATA_LEN, len));
+
+    int bytes = (pp_params[PP_PARAM_DATA_LEN] + 7) / 8;
+    if (sizeof(buf) < buf_len + 2 + len * bytes) {
+        return -1;
+    }
+    buf[buf_len++] = OP_WRITE_ISP_BITS;
+    buf[buf_len++] = n;
+    v <<= (32 - len);
+    while (0 < n--) {
+        uint32_t t = v;
+        for (int i = 0; i < bytes; i++) {
+            buf[buf_len++] = (t >> 24) & 0xff;
+            t <<= 8;
+        }
+    }
+
+    return 0;
+}
+
+int pp_ops_isp_send_multi(uint32_t v, int len, int n)
+{
+    return pp_ops_isp_send_msb_multi(pp_util_revert_bit_order(v, len), len, n);
+}
 #endif  // PP_EXEC_OPS_RW_BITS
 
 int pp_ops_delay_us(int n)
