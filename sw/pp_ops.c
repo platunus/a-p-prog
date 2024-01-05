@@ -95,6 +95,7 @@ int pp_ops_write_isp(uint8_t *v, int n)
 int pp_ops_read_isp_bits(int n)
 {
     int bytes = (pp_params[PP_PARAM_DATA_LEN] + 7) / 8;
+    n /= bytes;
     if (sizeof(buf) < buf_len + 2) {
         return -1;
     }

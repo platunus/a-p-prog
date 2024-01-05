@@ -108,7 +108,7 @@ int cf_p16f_c_read_page(uint8_t *data, int address, int num)
     pp_ops_init();
     pp_ops_reply(0xc1);
     cf_p16f_c_set_pc(address);
-    pp_ops_read_isp_bits(num / 2);
+    pp_ops_read_isp_bits(num);
 
     n = sizeof(buf);
     pp_ops_exec(buf, &n);
