@@ -121,7 +121,8 @@ void exec_ops(uint8_t *ops, int len)
                         d = 0;
                     }
                 }
-                if ((i % 8)) {
+                if ((i % 8) != 0) {
+                    d <<= (8 - (i % 8));  // Shift to MSB side if less than 8 bits
                     txbuf[txbuf_len++] = d;
                 }
                 dummy_locks(pp_params[PP_PARAM_POSTFIX_LEN]);
