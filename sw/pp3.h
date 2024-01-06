@@ -85,6 +85,7 @@ extern int pp_ops_write_isp_8(uint8_t v);
 extern int pp_ops_write_isp_24(uint32_t v);
 
 extern uint32_t pp_util_revert_bit_order(uint32_t v, int n);
+extern void pp_util_hexdump(const char *header, uint32_t addr_offs, const void *data, int size);
 
 #define pp_ops(f) do { int res = pp_ops_ ## f; if (res != 0) { \
         return res; \
