@@ -1151,6 +1151,8 @@ int main(int argc, char *argv[])
             info_print("Programming FLASH (%d B in %d pages per %d bytes): \n", flash_size,
                        flash_size/page_size,page_size);
             fflush(stdout);
+            if (cf->reset_pointer)
+                cf->reset_pointer();
             for (i = 0; i < flash_size; i=i+page_size) {
                 if (!is_empty(progmem+i, page_size)) {
                     cf->write_page(progmem + i, i, page_size);
@@ -1169,6 +1171,8 @@ int main(int argc, char *argv[])
             pages_performed = 0;
             info_print("Verifying FLASH (%d B in %d pages per %d bytes): \n",flash_size,
                        flash_size/page_size,page_size);
+            if (cf->reset_pointer)
+                cf->reset_pointer();
             for (i = 0; i < flash_size; i = i + page_size) {
                 if (is_empty(progmem+i,page_size)) {
                     debug_print("#");
