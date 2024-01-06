@@ -137,7 +137,7 @@ void initSerialPort()
                               NULL);                      /* no templates */
     if(port_handle==INVALID_HANDLE_VALUE) {
         printf("unable to open port %s -> %s\n",COM, portname);
-        exit(0);
+        exit(1);
     }
     strcpy(mode, "baud=57600 data=8 parity=n stop=1");
     memset(&port_sets, 0, sizeof(port_sets));  /* clear the new struct  */
@@ -146,13 +146,13 @@ void initSerialPort()
     if(!BuildCommDCBA(mode, &port_sets)) {
         printf("dcb settings failed\n");
         CloseHandle(port_handle);
-        exit(0);
+        exit(1);
     }
 
     if(!SetCommState(port_handle, &port_sets)) {
         printf("cfg settings failed\n");
         CloseHandle(port_handle);
-        exit(0);
+        exit(1);
     }
 
     timeout_sets.ReadIntervalTimeout         = 1;
@@ -164,7 +164,7 @@ void initSerialPort()
     if(!SetCommTimeouts(port_handle, &timeout_sets)) {
         printf("timeout settings failed\n");
         CloseHandle(port_handle);
-        exit(0);
+        exit(1);
     }
 }
 
@@ -1239,7 +1239,7 @@ int main(int argc, char *argv[])
                                     progmem[i + j], tdat[j]);
                             printf("Exiting now\n");
                             prog_exit_progmode();
-                            exit(0);
+                            exit(1);
                         }
                     }
                 }
@@ -1253,7 +1253,7 @@ int main(int argc, char *argv[])
                     printf("Error at 0x%2.2X E:0x%2.2X R:0x%2.2X\n",i,config_bytes[i],tdat[i]);
                     printf("Exiting now\n");
                     prog_exit_progmode();
-                    exit(0);
+                    exit(1);
                 }
             }
             info_print("OK\n");
@@ -1346,7 +1346,7 @@ int main(int argc, char *argv[])
                                     progmem[i + j], tdat[j]);
                             printf("Exiting now\n");
                             prog_exit_progmode();
-                            exit(0);
+                            exit(1);
                         }
                     }
                 }
@@ -1365,7 +1365,7 @@ int main(int argc, char *argv[])
                     printf("Error at 0x%2.2X E:0x%2.2X R:0x%2.2X\n",i,config_bytes[i],tdat[i]);
                     printf("Exiting now\n");
                     prog_exit_progmode();
-                    exit(0);
+                    exit(1);
                 }
             }
             info_print("OK\n");
@@ -1412,7 +1412,7 @@ int main(int argc, char *argv[])
                         printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",
                                i + j, file_image[i + j], tdat[j]);
                         prog_exit_progmode();
-                        exit(0);
+                        exit(1);
                     }
                 }
             }
@@ -1426,6 +1426,8 @@ int main(int argc, char *argv[])
                     info_print("config 1 OK: %4.4X\n",config);
                 } else {
                     printf("config 1 error: E:0x%4.4X R:0x%4.4X\n", config, econfig);
+                    prog_exit_progmode();
+                    exit(1);
                 }
 
                 config = p16a_get_config(8);
@@ -1435,6 +1437,8 @@ int main(int argc, char *argv[])
                     info_print("config 2 OK: %4.4X\n", config);
                 } else {
                     printf("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+                    prog_exit_progmode();
+                    exit(1);
                 }
             }
             if (chip_family==CF_P16F_C) {
@@ -1444,12 +1448,12 @@ int main(int argc, char *argv[])
                         printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",
                                 i + j, config_bytes[j], tdat[j]);
                         prog_exit_progmode();
-                        exit(0);
+                        exit(1);
                     }
                 }
             }
         }
     }
     prog_exit_progmode();
-    return 0;
+    exit(0);
 }
