@@ -1200,17 +1200,17 @@ int main(int argc, char *argv[])
             pages_performed = 0;
             cf->mass_erase();
             info_print("Programming FLASH (%d B in %d pages per %d bytes): \n", flash_size,
-                       flash_size/page_size,page_size);
+                       flash_size / page_size, page_size);
             fflush(stdout);
             if (cf->reset_pointer)
                 cf->reset_pointer();
-            for (i = 0; i < flash_size; i=i+page_size) {
-                if (!is_empty(progmem+i, page_size)) {
+            for (i = 0; i < flash_size; i += page_size) {
+                if (!is_empty(progmem + i, page_size)) {
                     cf->write_page(progmem + i, i, page_size);
                     pages_performed++;
                     info_print("#");
                 } else {
-                    debug_print(".");
+                    detail_print(".");
                 }
             }
 
@@ -1226,7 +1226,7 @@ int main(int argc, char *argv[])
                 cf->reset_pointer();
             for (i = 0; i < flash_size; i = i + page_size) {
                 if (is_empty(progmem+i,page_size)) {
-                    debug_print("#");
+                    detail_print(".");
                 } else {
                     cf->read_page(tdat, i, page_size);
                     pages_performed++;
@@ -1234,8 +1234,8 @@ int main(int argc, char *argv[])
                     info_print("#");
                     for (j = 0; j < page_size; j++) {
                         uint8_t mask = (j % 2) ? ~cf->odd_mask : ~cf->even_mask;
-                        if ((progmem[i + j + 0] & mask) != (tdat[j + 0] & mask)) {
-                            printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n", i + j,
+                        if ((progmem[i + j] & mask) != (tdat[j] & mask)) {
+                            printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n", i + j,
                                     progmem[i + j], tdat[j]);
                             printf("Exiting now\n");
                             prog_exit_progmode();
@@ -1250,7 +1250,8 @@ int main(int argc, char *argv[])
             cf->read_config(tdat, config_size);
             for (i = 0; i < config_size; i++) {
                 if (config_bytes[i] != tdat[i]) {
-                    printf("Error at 0x%2.2X E:0x%2.2X R:0x%2.2X\n",i,config_bytes[i],tdat[i]);
+                    printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
+                           i, config_bytes[i], tdat[i]);
                     printf("Exiting now\n");
                     prog_exit_progmode();
                     exit(1);
@@ -1298,7 +1299,7 @@ int main(int argc, char *argv[])
                     pages_performed++;
                     info_print("#");
                 } else {
-                    debug_print(".");
+                    detail_print(".");
                 }
             }
 
@@ -1330,7 +1331,7 @@ int main(int argc, char *argv[])
                        flash_size/page_size,page_size);
             for (i = 0; i < flash_size; i = i + page_size) {
                 if (is_empty(progmem+i,page_size)) {
-                    debug_print("#");
+                    detail_print(".");
                 } else {
                     if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|
                         (chip_family==CF_P18F_Qxx))
@@ -1342,7 +1343,7 @@ int main(int argc, char *argv[])
                     info_print("#");
                     for (j = 0; j < page_size; j++) {
                         if (progmem[i+j] != tdat[j]) {
-                            printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n", i + j,
+                            printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n", i + j,
                                     progmem[i + j], tdat[j]);
                             printf("Exiting now\n");
                             prog_exit_progmode();
@@ -1362,7 +1363,8 @@ int main(int argc, char *argv[])
             info_print("Verifying config...");
             for (i = 0; i < config_size; i++) {
                 if (config_bytes[i] != tdat[i]) {
-                    printf("Error at 0x%2.2X E:0x%2.2X R:0x%2.2X\n",i,config_bytes[i],tdat[i]);
+                    printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n", i,
+                           config_bytes[i], tdat[i]);
                     printf("Exiting now\n");
                     prog_exit_progmode();
                     exit(1);
@@ -1381,10 +1383,11 @@ int main(int argc, char *argv[])
                 p16c_mass_erase();
             if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                 p16a_rst_pointer();  // pointer reset is needed before every "big" operation
-            info_print("Programming FLASH (%d B in %d pages)", flash_size, flash_size/page_size);
+            info_print("Programming FLASH (%d B in %d pages per %d bytes): \n", flash_size,
+                       flash_size / page_size, page_size);
             fflush(stdout);
             for (i = 0; i < flash_size; i = i + page_size) {
-                info_print(".");
+                info_print("#");
                 if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                     p16a_program_page(i,page_size,0);
                 if (chip_family==CF_P16F_C)
@@ -1398,18 +1401,19 @@ int main(int argc, char *argv[])
                 p16c_write_cfg();
         }
         if (verify) {
-            info_print("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+            info_print("Verifying FLASH (%d B in %d pages per %d bytes): \n", flash_size,
+                       flash_size / page_size, page_size);
             if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                 p16a_rst_pointer();
             for (i = 0; i < flash_size; i = i + page_size) {
-                info_print(".");
+                info_print("#");
                 if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                     p16a_read_page(tdat, page_size);
                 if (chip_family==CF_P16F_C)
                     p16c_read_page(tdat, i, page_size);
                 for (j = 0; j < page_size; j++) {
                     if (file_image[i+j] != tdat[j]) {
-                        printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",
+                        printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n",
                                i + j, file_image[i + j], tdat[j]);
                         prog_exit_progmode();
                         exit(1);
@@ -1445,7 +1449,7 @@ int main(int argc, char *argv[])
                 p16c_read_page(tdat,0x8007*2,page_size);
                 for (j = 0; j < 10; j++) {
                     if (config_bytes[j] != tdat[j]) {
-                        printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",
+                        printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
                                 i + j, config_bytes[j], tdat[j]);
                         prog_exit_progmode();
                         exit(1);

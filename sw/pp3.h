@@ -91,6 +91,8 @@ extern uint32_t pp_util_revert_bit_order(uint32_t v, int n);
 
 #define info_print(fmt ...) do { if (verbose > 0) \
             flsprintf(stdout, fmt); } while (0)
+#define detail_print(fmt ...) do { if (verbose > 1) \
+            flsprintf(stdout, fmt); } while (0)
 #define debug_print(fmt ...) do { if (verbose > 2) \
             flsprintf(stdout, fmt); } while (0)
 #define verbose_print(fmt ...) do { if (verbose > 3) \
