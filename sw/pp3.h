@@ -5,23 +5,25 @@
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	35
 
-#define	CF_P16F_A	0
-#define	CF_P18F_A	1
-#define	CF_P16F_B	2
-#define	CF_P18F_B	3
-#define	CF_P18F_C	4
-#define	CF_P18F_D	5
-#define	CF_P18F_E	6
-#define	CF_P16F_C	7
-#define	CF_P16F_D	8
-#define	CF_P18F_F	9
-#define	CF_P18F_G	10
-#define	CF_P18F_Q	11
-#if 0
-#define	CF_P18F_Q43	12
-#define	CF_P18F_Q8x	13
-#endif
-#define	CF_P18F_Qxx	14
+enum {
+    CF_P16F_A,
+    CF_P18F_A,
+    CF_P16F_B,
+    CF_P18F_B,
+    CF_P18F_C,
+    CF_P18F_D,
+    CF_P18F_E,
+    CF_P16F_C,
+    CF_P16F_D,
+    CF_P18F_F,
+    CF_P18F_G,
+    CF_P18F_Q,
+    CF_P18F_Q43,
+    CF_P18F_Q8x,
+    CF_P18F_Qxx,
+
+    CF_NO_LEGACY  // use this to prevent legacy if (chip_family == xxx) processing
+};
 
 typedef struct {
     char *name;
