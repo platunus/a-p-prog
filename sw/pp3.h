@@ -28,6 +28,7 @@ typedef struct {
     int id;
     uint32_t config_address;
     int config_size;
+    uint8_t odd_mask, even_mask;
     int (*enter_progmode)(void);
     int (*exit_progmode)(void);
     int (*mass_erase)(void);

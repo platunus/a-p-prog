@@ -1182,7 +1182,8 @@ int main(int argc, char *argv[])
                     verbose_print("Verifying page at 0x%4.4X\n", i);
                     info_print("#");
                     for (j = 0; j < page_size; j++) {
-                        if (progmem[i+j] != tdat[j]) {
+                        uint8_t mask = (j % 2) ? ~cf->odd_mask : ~cf->even_mask;
+                        if ((progmem[i + j + 0] & mask) != (tdat[j + 0] & mask)) {
                             printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n", i + j,
                                     progmem[i + j], tdat[j]);
                             printf("Exiting now\n");
