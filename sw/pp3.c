@@ -319,13 +319,14 @@ void printHelp()
     printf("-n : skip verify after program\n");
     printf("-p : skip program \n");
     printf("-L : force to use legacy chip_family routines\n");
+    printf("-V : Just verify withouy program\n");
     printf("-h : show this help message and exit\n");
 }
 
 void parseArgs(int argc, char *argv[])
 {
     int c;
-    while ((c = getopt(argc, argv, "c:npLhs:r:t:v:")) != -1) {
+    while ((c = getopt(argc, argv, "c:npLVhs:r:t:v:")) != -1) {
         switch (c) {
         case 'c' :
             COM=optarg;
@@ -340,6 +341,10 @@ void parseArgs(int argc, char *argv[])
             break;
         case 'L':
             legacy_mode = 1;
+            break;
+        case 'V':
+            program = 0;
+            verify = 1;
             break;
         case 's' :
             sscanf(optarg,"%d",&sleep_time);
@@ -1152,7 +1157,7 @@ int main(int argc, char *argv[])
     char* filename = argv[argc-1];
     pm_point = (unsigned char *)(&progmem);
     cm_point = (unsigned char *)(&config_bytes);
-    if (program == 1 && parse_hex(filename,pm_point,cm_point)) {
+    if ((program || verify) && parse_hex(filename, pm_point, cm_point)) {
         // parse and write content of hex file into buffers
         fprintf(stderr,"Failed to read input file.\n");
         abort();
