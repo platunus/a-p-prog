@@ -1211,6 +1211,8 @@ int main(int argc, char *argv[])
                     info_print("#");
                 } else {
                     detail_print(".");
+                    if (cf->increase_pointer)
+                        cf->increase_pointer(page_size);
                 }
             }
 
@@ -1227,6 +1229,8 @@ int main(int argc, char *argv[])
             for (i = 0; i < flash_size; i = i + page_size) {
                 if (is_empty(progmem+i,page_size)) {
                     detail_print(".");
+                    if (cf->increase_pointer)
+                        cf->increase_pointer(page_size);
                 } else {
                     cf->read_page(tdat, i, page_size);
                     pages_performed++;
