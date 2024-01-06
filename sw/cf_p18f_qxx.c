@@ -38,32 +38,6 @@ int cf_p16f_c_enter_progmode(void)
     return 0;
 }
 
-int cf_p16f_a_exit_progmode(void)
-{
-    debug_print( "Exiting programming mode\n");
-
-    pp_ops_init();
-
-    // release_isp_dat_clk();
-    pp_ops_io_dat_in();
-    pp_ops_io_clk_in();
-
-    pp_ops_io_mclr(1);
-    pp_ops_delay_ms(30);
-    pp_ops_io_mclr(0);
-    pp_ops_delay_ms(30);
-    pp_ops_io_mclr(1);
-    pp_ops_reply(0x82);
-
-    int n;
-    uint8_t buf[1];
-    n = sizeof(buf);
-    pp_ops_exec(buf, &n);
-    debug_print("%s: n=%d, replay=0x%02x\n", __func__, n, buf[0]);
-
-    return 0;
-}
-
 int cf_p18f_qxx_mass_erase(void)
 {
     debug_print( "Mass erase\n");

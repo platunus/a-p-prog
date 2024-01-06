@@ -35,6 +35,7 @@ int devid_expected, devid_mask, baudRate, com, flash_size, page_size, chip_famil
 unsigned char file_image[70000], progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 
 chip_family_t *chip_families[] = {
+    &cf_p16f_a,
     &cf_p18q43,
     &cf_p18q8x,
     NULL
@@ -1086,10 +1087,12 @@ int parse_hex(char * filename, unsigned char * progmem, unsigned char * config)
                 for (i = 0; i < line_len; i++)
                     progmem[effective_address+i] = line_content[i];
             }
-            if (cf && cf->config_address == effective_address) {
+            if (cf &&
+                cf->config_address <= effective_address &&
+                effective_address < cf->config_address + cf->config_address) {
                 dump_print("CB ");
                 for (i = 0; i < line_len; i++)
-                    config[i] = line_content[i];
+                    config[effective_address - cf->config_address + i] = line_content[i];
             }
             if ((line_address_offset == 0x30) &&
                 ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|
@@ -1218,7 +1221,7 @@ int main(int argc, char *argv[])
 
             info_print("\n%d pages programmed\n",pages_performed);
             info_print("Programming config\n");
-            cf->write_config(config_bytes, config_size);
+            cf->write_config(config_bytes, cf->config_size);
         }
         if (verify) {
             pages_performed = 0;
@@ -1251,9 +1254,10 @@ int main(int argc, char *argv[])
             info_print("\n%d pages verified\n", pages_performed);
 
             info_print("Verifying config...");
-            cf->read_config(tdat, config_size);
-            for (i = 0; i < config_size; i++) {
-                if (config_bytes[i] != tdat[i]) {
+            cf->read_config(tdat, cf->config_size);
+            for (i = 0; i < cf->config_size; i++) {
+                uint8_t mask = (i % 2) ? ~cf->odd_mask : ~cf->even_mask;
+                if ((config_bytes[i] & mask) != (tdat[i] & mask)) {
                     printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
                            i, config_bytes[i], tdat[i]);
                     printf("Exiting now\n");
