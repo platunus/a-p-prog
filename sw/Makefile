@@ -9,7 +9,14 @@ all: pp3
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-pp3: pp3.o pp_ops.o pp_utils.o cf_p18f_qxx.o cf_p16f_a.o
+OBJS+=pp3.o
+OBJS+=comm.o
+OBJS+=pp_ops.o
+OBJS+=pp_utils.o
+OBJS+=cf_p18f_qxx.o
+OBJS+=cf_p16f_a.o
+
+pp3: $(OBJS)
 	$(CC) $^ -o pp3
 
 install: pp3 
@@ -19,4 +26,4 @@ install: pp3
 	install -m0755 pp3 $(DESTDIR)$(PREFIX)/bin
 
 clean:
-	rm -f pp3 pp3.o pp_ops.o pp_utils.o cf_p18f_qxx.o cf_p16f_a.o
+	rm -f pp3 $(OBJS)

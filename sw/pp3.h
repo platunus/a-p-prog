@@ -44,6 +44,8 @@ typedef struct {
 } chip_family_t;
 
 extern int verbose;
+extern char *comm_port_name;
+
 extern int devid_mask, flash_size, page_size, chip_family, config_size;
 extern unsigned char file_image[70000], progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 
@@ -51,11 +53,13 @@ extern chip_family_t cf_p16f_a;
 extern chip_family_t cf_p18q43;
 extern chip_family_t cf_p18q8x;
 
-extern void sleep_us(int num);
+// comm.c
+extern void initSerialPort(void);
 extern void putByte(int byte);
+extern void putBytes(unsigned char * data, int len);
 extern int getByte(void);
-extern void flsprintf(FILE* f, char *fmt, ...);
 
+// pp_ops.c
 extern void pp_ops_init(void);
 extern int pp_ops_io_mclr(int v);
 extern int pp_ops_io_dat_in(void);
@@ -85,23 +89,28 @@ extern int pp_ops_exec(uint8_t *v, int *n);
 extern int pp_ops_write_isp_8(uint8_t v);
 extern int pp_ops_write_isp_24(uint32_t v);
 
+// pp_util.c
 extern uint32_t pp_util_revert_bit_order(uint32_t v, int n);
 extern void pp_util_hexdump(const char *header, uint32_t addr_offs, const void *data, int size);
+extern void pp_util_flush_printf(FILE* f, char *fmt, ...);
+extern size_t pp_util_getline(char **lineptr, size_t *n, FILE *stream);
+extern void sleep_ms(int num);
+extern void sleep_us(int num);
 
 #define pp_ops(f) do { int res = pp_ops_ ## f; if (res != 0) { \
         return res; \
     } } while (0)
 
 #define info_print(fmt ...) do { if (verbose > 0) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define detail_print(fmt ...) do { if (verbose > 1) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define debug_print(fmt ...) do { if (verbose > 2) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define verbose_print(fmt ...) do { if (verbose > 3) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define dump_print(fmt ...) do { if (verbose > 4) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 
 // CF_P16F_A
 int cf_p16f_a_enter_progmode(void);
