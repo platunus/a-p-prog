@@ -25,16 +25,17 @@ char * COM = "";
 char * PP_VERSION = "0.99";
 
 int verbose = 1, verify = 1, program = 1;
+int legacy_mode = 0;
 int reset = 0;
 // set a proper init value for sleep time to avoid a lot of issues such as 'rx fail'.
 int sleep_time = 2000;
 int reset_time = 30;
+char *cpu_type_name = NULL;
 int devid_expected, devid_mask, baudRate, com, flash_size, page_size, chip_family, config_size;
 unsigned char file_image[70000], progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
 chip_family_t *chip_families[] = {
+    &cf_p16f_a,
     &cf_p18q43,
     &cf_p18q8x,
     NULL
@@ -137,7 +138,7 @@ void initSerialPort()
                               NULL);                      /* no templates */
     if(port_handle==INVALID_HANDLE_VALUE) {
         printf("unable to open port %s -> %s\n",COM, portname);
-        exit(0);
+        exit(1);
     }
     strcpy(mode, "baud=57600 data=8 parity=n stop=1");
     memset(&port_sets, 0, sizeof(port_sets));  /* clear the new struct  */
@@ -146,13 +147,13 @@ void initSerialPort()
     if(!BuildCommDCBA(mode, &port_sets)) {
         printf("dcb settings failed\n");
         CloseHandle(port_handle);
-        exit(0);
+        exit(1);
     }
 
     if(!SetCommState(port_handle, &port_sets)) {
         printf("cfg settings failed\n");
         CloseHandle(port_handle);
-        exit(0);
+        exit(1);
     }
 
     timeout_sets.ReadIntervalTimeout         = 1;
@@ -164,7 +165,7 @@ void initSerialPort()
     if(!SetCommTimeouts(port_handle, &timeout_sets)) {
         printf("timeout settings failed\n");
         CloseHandle(port_handle);
-        exit(0);
+        exit(1);
     }
 }
 
@@ -318,13 +319,15 @@ void printHelp()
     printf("-v NUM : verbose output level (default: 1)\n");
     printf("-n : skip verify after program\n");
     printf("-p : skip program \n");
+    printf("-L : force to use legacy chip_family routines\n");
+    printf("-V : Just verify withouy program\n");
     printf("-h : show this help message and exit\n");
 }
 
 void parseArgs(int argc, char *argv[])
 {
     int c;
-    while ((c = getopt(argc, argv, "c:nphs:r:t:v:")) != -1) {
+    while ((c = getopt(argc, argv, "c:npLVhs:r:t:v:")) != -1) {
         switch (c) {
         case 'c' :
             COM=optarg;
@@ -337,6 +340,13 @@ void parseArgs(int argc, char *argv[])
             // skip program means also skip verify.
             verify = 0;
             break;
+        case 'L':
+            legacy_mode = 1;
+            break;
+        case 'V':
+            program = 0;
+            verify = 1;
+            break;
         case 's' :
             sscanf(optarg,"%d",&sleep_time);
             break;
@@ -345,7 +355,7 @@ void parseArgs(int argc, char *argv[])
             sscanf(optarg,"%d",&reset_time);
             break;
         case 't' :
-            setCPUtype(optarg);
+            cpu_type_name = strdup(optarg);
             break;
         case 'v' :
             sscanf(optarg,"%d",&verbose);
@@ -402,24 +412,32 @@ int setCPUtype(char* cpu)
                     &read_flash_size,&read_page_size,&read_id,&read_mask,(char*)&read_algo_type);
             dump_print("\n*** %s,%d,%d,%x,%x,%s", read_cpu_type,
                        read_flash_size, read_page_size, read_id, read_mask, read_algo_type);
-            if (strcmp(read_cpu_type,cpu) == 0) {
-                flash_size = read_flash_size;
-                page_size = read_page_size;
-                devid_expected = read_id;
-                devid_mask = read_mask;
-                info_print("Found database match %s,%d,%d,%x,%x,%s\n", read_cpu_type,
-                           read_flash_size, read_page_size, read_id, read_mask, read_algo_type);
-                cf = NULL;
+            if (strcmp(read_cpu_type,cpu) != 0)
+                continue;
+
+            flash_size = read_flash_size;
+            page_size = read_page_size;
+            devid_expected = read_id;
+            devid_mask = read_mask;
+            info_print("Found database match %s,%d,%d,%x,%x,%s\n", read_cpu_type,
+                       read_flash_size, read_page_size, read_id, read_mask, read_algo_type);
+            cf = NULL;
+            if (!legacy_mode) {
                 for (i = 0; chip_families[i] != NULL; i++) {
                     if (strcmp(chip_families[i]->name, read_algo_type) == 0) {
                         cf = chip_families[i];
                         break;
                     }
                 }
-                if (cf != NULL) {
-                        chip_family = cf->id;
-                        config_size = cf->config_size;
-                } else {
+            }
+            if (cf != NULL) {
+                // set chip_family to CF_NO_LEGACY
+                // this prevent legacy if (chip_family == xxx) processing
+                chip_family = CF_NO_LEGACY;
+                config_size = cf->config_size;
+            } else {
+                info_print("Fall back to the legacy chip_family routines\n");
+
                 if (strcmp("CF_P16F_A",   read_algo_type) == 0) chip_family = CF_P16F_A;
                 if (strcmp("CF_P16F_B",   read_algo_type) == 0) chip_family = CF_P16F_B;
                 if (strcmp("CF_P16F_C",   read_algo_type) == 0) chip_family = CF_P16F_C;
@@ -432,6 +450,8 @@ int setCPUtype(char* cpu)
                 if (strcmp("CF_P18F_F",   read_algo_type) == 0) chip_family = CF_P18F_F;
                 if (strcmp("CF_P18F_G",   read_algo_type) == 0) chip_family = CF_P18F_G;
                 if (strcmp("CF_P18F_Q",   read_algo_type) == 0) chip_family = CF_P18F_Q;
+                if (strcmp("CF_P18F_Q43", read_algo_type) == 0) chip_family = CF_P18F_Q43;
+                if (strcmp("CF_P18F_Q8x", read_algo_type) == 0) chip_family = CF_P18F_Q8x;
 
                 if (chip_family == CF_P18F_A)
                     config_size = 16;
@@ -453,6 +473,13 @@ int setCPUtype(char* cpu)
                     config_size = 10;
                     chip_family = CF_P18F_F;
                 }
+                if (chip_family == CF_P18F_Q43) {
+                    config_size = 10;
+                    chip_family = CF_P18F_Qxx;
+                }
+                if (chip_family == CF_P18F_Q8x) {
+                    config_size = 35;
+                    chip_family = CF_P18F_Qxx;
                 }
                 debug_print("chip family:%d, config size:%d\n", chip_family, config_size);
             }
@@ -849,6 +876,15 @@ int p16c_write_single_cfg(unsigned char data1, unsigned char data2, int address)
     return 0;
 }
 
+int p18qxx_mass_erase (void)
+{
+    debug_print( "Mass erase\n");
+    putByte(0x49);
+    putByte(0x00);
+    getByte();
+    return 0;
+}
+
 int p18q_write_single_cfg(unsigned char data1, unsigned char data2, int address)
 {
     debug_print( "Writing cfg 0x%2.2x 0x%2.2x at 0x%6.6x\n", data1, data2, address);
@@ -860,6 +896,20 @@ int p18q_write_single_cfg(unsigned char data1, unsigned char data2, int address)
     putByte((address>>0)&0xFF);
     putByte(data1);
     putByte(data2);
+    getByte();
+    return 0;
+}
+
+int p18q_write_byte_cfg(unsigned char data, int address)
+{
+    debug_print( "Writing cfg 0x%2.2x at 0x%6.6x\n", data, address);
+    putByte(0x48);
+    putByte(5);
+    putByte(0);
+    putByte((address>>16)&0xFF);
+    putByte((address>>8)&0xFF);
+    putByte((address>>0)&0xFF);
+    putByte(data);
     getByte();
     return 0;
 }
@@ -940,6 +990,7 @@ int prog_enter_progmode(void)
     else if (chip_family==CF_P16F_C) putByte(0x40);
     else if (chip_family==CF_P18F_F) putByte(0x40);
     else if (chip_family==CF_P18F_Q) putByte(0x40);
+    else if (chip_family==CF_P18F_Qxx) putByte(0x40);
     putByte(0x00);
     getByte();
     return 0;
@@ -980,7 +1031,7 @@ int prog_get_device_id(void)
         devid = devid & devid_mask;
         return devid;
     }
-    if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)) {
+    if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|(chip_family==CF_P18F_Qxx)) {
         p16c_read_page(mem_str, 0x3FFFFE*2,2);
         devid = (((unsigned int)(mem_str[1]))<<8) + (((unsigned int)(mem_str[0]))<<0);
         devid = devid & devid_mask;
@@ -1036,14 +1087,16 @@ int parse_hex(char * filename, unsigned char * progmem, unsigned char * config)
                 for (i = 0; i < line_len; i++)
                     progmem[effective_address+i] = line_content[i];
             }
-            if (cf && cf->config_address == effective_address) {
+            if (cf &&
+                cf->config_address <= effective_address &&
+                effective_address < cf->config_address + cf->config_address) {
                 dump_print("CB ");
                 for (i = 0; i < line_len; i++)
-                    config[i] = line_content[i];
+                    config[effective_address - cf->config_address + i] = line_content[i];
             }
             if ((line_address_offset == 0x30) &&
                 ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|
-                 (chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))) {
+                 (chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|(chip_family==CF_P18F_Qxx))) {
                 dump_print("CB ");
                 for (i = 0; i < line_len; i++)
                     config[i] = line_content[i];
@@ -1078,6 +1131,7 @@ int main(int argc, char *argv[])
     unsigned char *pm_point, *cm_point;
     unsigned char tdat[200];
     parseArgs(argc, argv);
+    setCPUtype(cpu_type_name);
     // check setCPUtype works or not.
     if (flash_size == 0) {
           printf("Please use '-t MODEL' to specify correct PIC model, such as '16f1824'\n");
@@ -1106,7 +1160,7 @@ int main(int argc, char *argv[])
     char* filename = argv[argc-1];
     pm_point = (unsigned char *)(&progmem);
     cm_point = (unsigned char *)(&config_bytes);
-    if (program == 1 && parse_hex(filename,pm_point,cm_point)) {
+    if ((program || verify) && parse_hex(filename, pm_point, cm_point)) {
         // parse and write content of hex file into buffers
         fprintf(stderr,"Failed to read input file.\n");
         abort();
@@ -1149,41 +1203,50 @@ int main(int argc, char *argv[])
             pages_performed = 0;
             cf->mass_erase();
             info_print("Programming FLASH (%d B in %d pages per %d bytes): \n", flash_size,
-                       flash_size/page_size,page_size);
+                       flash_size / page_size, page_size);
             fflush(stdout);
-            for (i = 0; i < flash_size; i=i+page_size) {
-                if (!is_empty(progmem+i, page_size)) {
+            if (cf->reset_pointer)
+                cf->reset_pointer();
+            for (i = 0; i < flash_size; i += page_size) {
+                if (!is_empty(progmem + i, page_size)) {
                     cf->write_page(progmem + i, i, page_size);
                     pages_performed++;
                     info_print("#");
                 } else {
-                    debug_print(".");
+                    detail_print(".");
+                    if (cf->increase_pointer)
+                        cf->increase_pointer(page_size);
                 }
             }
 
             info_print("\n%d pages programmed\n",pages_performed);
             info_print("Programming config\n");
-            cf->write_config(config_bytes, config_size);
+            cf->write_config(config_bytes, cf->config_size);
         }
         if (verify) {
             pages_performed = 0;
             info_print("Verifying FLASH (%d B in %d pages per %d bytes): \n",flash_size,
                        flash_size/page_size,page_size);
+            if (cf->reset_pointer)
+                cf->reset_pointer();
             for (i = 0; i < flash_size; i = i + page_size) {
                 if (is_empty(progmem+i,page_size)) {
-                    debug_print("#");
+                    detail_print(".");
+                    if (cf->increase_pointer)
+                        cf->increase_pointer(page_size);
                 } else {
                     cf->read_page(tdat, i, page_size);
                     pages_performed++;
                     verbose_print("Verifying page at 0x%4.4X\n", i);
                     info_print("#");
                     for (j = 0; j < page_size; j++) {
-                        if (progmem[i+j] != tdat[j]) {
-                            printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n", i + j,
+                        uint8_t mask = (j % 2) ? ~cf->odd_mask : ~cf->even_mask;
+                        if ((progmem[i + j] & mask) != (tdat[j] & mask)) {
+                            printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n", i + j,
                                     progmem[i + j], tdat[j]);
                             printf("Exiting now\n");
                             prog_exit_progmode();
-                            exit(0);
+                            exit(1);
                         }
                     }
                 }
@@ -1191,13 +1254,15 @@ int main(int argc, char *argv[])
             info_print("\n%d pages verified\n", pages_performed);
 
             info_print("Verifying config...");
-            cf->read_config(tdat, config_size);
-            for (i = 0; i < config_size; i++) {
-                if (config_bytes[i] != tdat[i]) {
-                    printf("Error at 0x%2.2X E:0x%2.2X R:0x%2.2X\n",i,config_bytes[i],tdat[i]);
+            cf->read_config(tdat, cf->config_size);
+            for (i = 0; i < cf->config_size; i++) {
+                uint8_t mask = (i % 2) ? ~cf->odd_mask : ~cf->even_mask;
+                if ((config_bytes[i] & mask) != (tdat[i] & mask)) {
+                    printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
+                           i, config_bytes[i], tdat[i]);
                     printf("Exiting now\n");
                     prog_exit_progmode();
-                    exit(0);
+                    exit(1);
                 }
             }
             info_print("OK\n");
@@ -1205,7 +1270,8 @@ int main(int argc, char *argv[])
     } else
     // ah, I need to unify programming interfaces for PIC16 and PIC18
     if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B)|(chip_family==CF_P18F_D)|
-        (chip_family==CF_P18F_E)|(chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)) {
+        (chip_family==CF_P18F_E)|(chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|
+        (chip_family==CF_P18F_Qxx)) {
         //
         // PIC 18F
         //
@@ -1221,6 +1287,8 @@ int main(int argc, char *argv[])
                 p18e_mass_erase();
             if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
                 p16c_mass_erase();
+            if (chip_family==CF_P18F_Qxx)
+                p18qxx_mass_erase();
             info_print("Programming FLASH (%d B in %d pages per %d bytes): \n", flash_size,
                        flash_size/page_size,page_size);
             fflush(stdout);
@@ -1232,14 +1300,14 @@ int main(int argc, char *argv[])
                     if (chip_family==CF_P18F_F)
                         p16c_write_page(progmem + i, i * 2, page_size);
                     else
-                    if (chip_family==CF_P18F_Q)
+                    if ((chip_family==CF_P18F_Q)|(chip_family==CF_P18F_Qxx))
                         p18q_write_page(progmem + i, i * 2, page_size);
                     else
                         p18a_write_page(progmem + i, i, page_size);
                     pages_performed++;
                     info_print("#");
                 } else {
-                    debug_print(".");
+                    detail_print(".");
                 }
             }
 
@@ -1257,6 +1325,11 @@ int main(int argc, char *argv[])
                     p16c_write_single_cfg(config_bytes[i+1], config_bytes[i], 0x300000+i);
                 if (chip_family==CF_P18F_Q)
                     p18q_write_single_cfg(config_bytes[i+1], config_bytes[i], 0x300000+i);
+                if (chip_family==CF_P18F_Qxx) {
+                    p18q_write_byte_cfg(config_bytes[i], 0x300000+i);
+                    if (i + 1 < config_size)
+                        p18q_write_byte_cfg(config_bytes[i+1], 0x300000+i+1);
+                }
             }
             // for PIC18FxxJxx, config bytes are at the end of FLASH memory
         }
@@ -1266,9 +1339,10 @@ int main(int argc, char *argv[])
                        flash_size/page_size,page_size);
             for (i = 0; i < flash_size; i = i + page_size) {
                 if (is_empty(progmem+i,page_size)) {
-                    debug_print("#");
+                    detail_print(".");
                 } else {
-                    if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
+                    if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|
+                        (chip_family==CF_P18F_Qxx))
                         p16c_read_page(tdat, i*2, page_size);
                     else
                         p18a_read_page(tdat, i, page_size);
@@ -1277,11 +1351,11 @@ int main(int argc, char *argv[])
                     info_print("#");
                     for (j = 0; j < page_size; j++) {
                         if (progmem[i+j] != tdat[j]) {
-                            printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n", i + j,
+                            printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n", i + j,
                                     progmem[i + j], tdat[j]);
                             printf("Exiting now\n");
                             prog_exit_progmode();
-                            exit(0);
+                            exit(1);
                         }
                     }
                 }
@@ -1289,16 +1363,19 @@ int main(int argc, char *argv[])
             info_print("\n%d pages verified\n", pages_performed);
             if ((chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q))
                 p16c_read_page(tdat,0x300000*2,page_size);
+            else if (chip_family==CF_P18F_Qxx)
+                p18q_read_cfg(tdat,0x300000,config_size);
             else
                 p18a_read_page(tdat,0x300000,page_size);
 
             info_print("Verifying config...");
             for (i = 0; i < config_size; i++) {
                 if (config_bytes[i] != tdat[i]) {
-                    printf("Error at 0x%2.2X E:0x%2.2X R:0x%2.2X\n",i,config_bytes[i],tdat[i]);
+                    printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n", i,
+                           config_bytes[i], tdat[i]);
                     printf("Exiting now\n");
                     prog_exit_progmode();
-                    exit(0);
+                    exit(1);
                 }
             }
             info_print("OK\n");
@@ -1314,10 +1391,11 @@ int main(int argc, char *argv[])
                 p16c_mass_erase();
             if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                 p16a_rst_pointer();  // pointer reset is needed before every "big" operation
-            info_print("Programming FLASH (%d B in %d pages)", flash_size, flash_size/page_size);
+            info_print("Programming FLASH (%d B in %d pages per %d bytes): \n", flash_size,
+                       flash_size / page_size, page_size);
             fflush(stdout);
             for (i = 0; i < flash_size; i = i + page_size) {
-                info_print(".");
+                info_print("#");
                 if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                     p16a_program_page(i,page_size,0);
                 if (chip_family==CF_P16F_C)
@@ -1331,21 +1409,22 @@ int main(int argc, char *argv[])
                 p16c_write_cfg();
         }
         if (verify) {
-            info_print("Verifying FLASH (%d B in %d pages)",flash_size,flash_size/page_size);
+            info_print("Verifying FLASH (%d B in %d pages per %d bytes): \n", flash_size,
+                       flash_size / page_size, page_size);
             if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                 p16a_rst_pointer();
             for (i = 0; i < flash_size; i = i + page_size) {
-                info_print(".");
+                info_print("#");
                 if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
                     p16a_read_page(tdat, page_size);
                 if (chip_family==CF_P16F_C)
                     p16c_read_page(tdat, i, page_size);
                 for (j = 0; j < page_size; j++) {
                     if (file_image[i+j] != tdat[j]) {
-                        printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",
+                        printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n",
                                i + j, file_image[i + j], tdat[j]);
                         prog_exit_progmode();
-                        exit(0);
+                        exit(1);
                     }
                 }
             }
@@ -1358,7 +1437,9 @@ int main(int argc, char *argv[])
                 if (config == econfig) {
                     info_print("config 1 OK: %4.4X\n",config);
                 } else {
-                    printf("config 1 error: E:0x%4.4X R:0x%4.4X\n", config, econfig);
+                    printf("config 1 error: E:0x%4.4X R:0x%4.4X\n", econfig, config);
+                    prog_exit_progmode();
+                    exit(1);
                 }
 
                 config = p16a_get_config(8);
@@ -1367,22 +1448,24 @@ int main(int argc, char *argv[])
                 if (config == econfig) {
                     info_print("config 2 OK: %4.4X\n", config);
                 } else {
-                    printf("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+                    printf("config 2 error: E:0x%4.4X R:0x%4.4X\n", econfig, config);
+                    prog_exit_progmode();
+                    exit(1);
                 }
             }
             if (chip_family==CF_P16F_C) {
                 p16c_read_page(tdat,0x8007*2,page_size);
                 for (j = 0; j < 10; j++) {
                     if (config_bytes[j] != tdat[j]) {
-                        printf("Error at 0x%4.4X E:0x%2.2X R:0x%2.2X\n",
+                        printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
                                 i + j, config_bytes[j], tdat[j]);
                         prog_exit_progmode();
-                        exit(0);
+                        exit(1);
                     }
                 }
             }
         }
     }
     prog_exit_progmode();
-    return 0;
+    exit(0);
 }

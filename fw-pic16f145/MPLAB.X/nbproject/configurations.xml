@@ -26,7 +26,7 @@
       <itemPath>../usb_descriptors.c</itemPath>
       <itemPath>../main.c</itemPath>
       <itemPath>../usb_config.h</itemPath>
-      <itemPath>../m-stack/apps/common/hardware.c</itemPath>
+      <itemPath>../hardware.c</itemPath>
       <itemPath>../m-stack/apps/common/hardware.h</itemPath>
       <itemPath>../pp.c</itemPath>
     </logicalFolder>
@@ -47,7 +47,7 @@
         <targetDevice>PIC16F1454</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>noID</platformTool>
+        <platformTool>PK5Tool</platformTool>
         <languageToolchain>XC8</languageToolchain>
         <languageToolchainVersion>2.41</languageToolchainVersion>
         <platform>4</platform>

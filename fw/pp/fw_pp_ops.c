@@ -103,9 +103,6 @@ void exec_ops(uint8_t *ops, int len)
                 send_bits(pp_params[PP_PARAM_CMD1], pp_params[PP_PARAM_CMD1_LEN]);
                 fw_pp_ops_delay(pp_params[PP_PARAM_DELAY1]);
 
-                send_bits(pp_params[PP_PARAM_CMD2], pp_params[PP_PARAM_CMD2_LEN]);
-                fw_pp_ops_delay(pp_params[PP_PARAM_DELAY2]);
-
                 ISP_DAT_IN;
                 dummy_locks(pp_params[PP_PARAM_PREFIX_LEN]);
                 d = 0;
@@ -121,11 +118,16 @@ void exec_ops(uint8_t *ops, int len)
                         d = 0;
                     }
                 }
-                if ((i % 8)) {
+                if ((i % 8) != 0) {
+                    d <<= (8 - (i % 8));  // Shift to MSB side if less than 8 bits
                     txbuf[txbuf_len++] = d;
                 }
                 dummy_locks(pp_params[PP_PARAM_POSTFIX_LEN]);
+                fw_pp_ops_delay(pp_params[PP_PARAM_DELAY2]);
+
+                send_bits(pp_params[PP_PARAM_CMD2], pp_params[PP_PARAM_CMD2_LEN]);
                 fw_pp_ops_delay(pp_params[PP_PARAM_DELAY3]);
+
                 for (i = 0; i < txbuf_len; i++) {
                     verbose_print("0x80: exec_ops:  READ_ISP_BITS tx: %02x %02x", n, txbuf[i]);
                     usart_tx_b(txbuf[i]);
@@ -138,9 +140,6 @@ void exec_ops(uint8_t *ops, int len)
 
                 send_bits(pp_params[PP_PARAM_CMD1], pp_params[PP_PARAM_CMD1_LEN]);
                 fw_pp_ops_delay(pp_params[PP_PARAM_DELAY1]);
-
-                send_bits(pp_params[PP_PARAM_CMD2], pp_params[PP_PARAM_CMD2_LEN]);
-                fw_pp_ops_delay(pp_params[PP_PARAM_DELAY2]);
 
                 ISP_DAT(0);
                 dummy_locks(pp_params[PP_PARAM_PREFIX_LEN]);
@@ -159,6 +158,9 @@ void exec_ops(uint8_t *ops, int len)
                 }
                 ISP_DAT(0);
                 dummy_locks(pp_params[PP_PARAM_POSTFIX_LEN]);
+                fw_pp_ops_delay(pp_params[PP_PARAM_DELAY2]);
+
+                send_bits(pp_params[PP_PARAM_CMD2], pp_params[PP_PARAM_CMD2_LEN]);
                 fw_pp_ops_delay(pp_params[PP_PARAM_DELAY3]);
             }
             break;
