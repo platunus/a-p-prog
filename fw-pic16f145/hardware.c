@@ -67,7 +67,7 @@ _CONFIG3(WPFP_WPFP255 & SOSCSEL_SOSC & WUTSEL_LEG & ALTPMP_ALPMPDIS & WPDIS_WPDI
 #pragma config STVREN = ON
 #pragma config BORV = LO
 #pragma config LPBOR = ON
-#pragma config LVP = OFF
+#pragma config LVP = ON
 
 #elif __32MX460F512L__
 #pragma config DEBUG = OFF, ICESEL = ICS_PGx2, PWP = OFF, BWP = OFF, CP = OFF
