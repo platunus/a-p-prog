@@ -21,7 +21,6 @@ int parse_hex (char * filename, unsigned char * progmem, unsigned char * config)
 size_t getlinex(char **lineptr, size_t *n, FILE *stream) ;
 void comErr(char *fmt, ...);
 
-char * COM = "";
 char * PP_VERSION = "0.99";
 
 int verbose = 1, verify = 1, program = 1;
@@ -31,6 +30,7 @@ int reset = 0;
 int sleep_time = 2000;
 int reset_time = 30;
 char *cpu_type_name = NULL;
+char *comm_port_name = NULL;
 int devid_expected, devid_mask, baudRate, com, flash_size, page_size, chip_family, config_size;
 unsigned char file_image[70000], progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 
@@ -50,8 +50,8 @@ chip_family_t *cf = NULL;
 void initSerialPort()
 {
     baudRate = B57600;
-    debug_print("Opening: %s at %d\n", COM, baudRate);
-    com =  open(COM, O_RDWR | O_NOCTTY | O_NDELAY);
+    debug_print("Opening: %s at %d\n", comm_port_name, baudRate);
+    com =  open(comm_port_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (com < 0)
         comErr("Failed to open serial port\n");
 
@@ -78,7 +78,7 @@ void initSerialPort()
     opts.c_cc[VMIN] = 0;
     opts.c_cc[VTIME] = 10;  // 0.1 sec
     if (tcsetattr(com, TCSANOW, &opts) != 0) {
-        perror(COM);
+        perror(comm_port_name);
         printf("set attr error");
         abort();
     }
@@ -128,7 +128,7 @@ void initSerialPort()
     COMMTIMEOUTS timeout_sets;
     DCB port_sets;
     strcpy(portname, "\\\\.\\");
-    strcat(portname, COM);
+    strcat(portname, comm_port_name);
     port_handle = CreateFileA(portname,
                               GENERIC_READ|GENERIC_WRITE,
                               0,                          /* no share  */
@@ -137,7 +137,7 @@ void initSerialPort()
                               0,                          /* no threads */
                               NULL);                      /* no templates */
     if(port_handle==INVALID_HANDLE_VALUE) {
-        printf("unable to open port %s -> %s\n",COM, portname);
+        printf("unable to open port %s -> %s\n", comm_port_name, portname);
         exit(1);
     }
     strcpy(mode, "baud=57600 data=8 parity=n stop=1");
@@ -215,7 +215,7 @@ void comErr(char *fmt, ...)
     va_start(va, fmt);
     vsnprintf(buf, sizeof(buf), fmt, va);
     fprintf(stderr,"%s", buf);
-    perror(COM);
+    perror(comm_port_name);
     va_end(va);
     abort();
 }
@@ -330,7 +330,7 @@ void parseArgs(int argc, char *argv[])
     while ((c = getopt(argc, argv, "c:npLVhs:r:t:v:")) != -1) {
         switch (c) {
         case 'c' :
-            COM=optarg;
+            comm_port_name = optarg;
             break;
         case 'n':
             verify = 0;
@@ -1137,7 +1137,7 @@ int main(int argc, char *argv[])
           printf("Please use '-t MODEL' to specify correct PIC model, such as '16f1824'\n");
           exit(1);
     }
-    if (strcmp(COM, "") == 0) {
+    if (comm_port_name == NULL) {
         printf("Please use '-c PORT' to specify correct serial device\n");
         exit(1);
     }
