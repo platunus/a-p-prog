@@ -1,5 +1,8 @@
 /*
- * a-p-prog FW for PIC 16F14x
+ * a-p-prog FW for PIC 16F1454
+ *
+ * Copyright (c) 2024 @hanyazou
+ *
  */
 /*
  * USB CDC-ACM Demo
