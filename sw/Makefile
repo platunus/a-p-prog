@@ -16,6 +16,7 @@ OBJS+=pp_ops.o
 OBJS+=pp_utils.o
 OBJS+=cf_p18f_qxx.o
 OBJS+=cf_p16f_a.o
+OBJS+=cf_p16f_b.o
 
 pp3: $(OBJS)
 	$(CC) $^ -o pp3
