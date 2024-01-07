@@ -739,6 +739,9 @@ int prog_exit_progmode(void)
 
 int prog_reset(void)
 {
+    if (cf)
+        return cf->reset_target();
+
     return prog_exit_progmode();
 }
 

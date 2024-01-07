@@ -33,6 +33,7 @@ typedef struct {
     uint8_t odd_mask, even_mask;
     int (*enter_progmode)(void);
     int (*exit_progmode)(void);
+    int (*reset_target)(void);
     int (*mass_erase)(void);
     int (*reset_pointer)(void);
     int (*increase_pointer)(int num);
@@ -115,6 +116,7 @@ extern void sleep_us(int num);
 // CF_P16F_A
 int cf_p16f_a_enter_progmode(void);
 int cf_p16f_a_exit_progmode(void);
+int cf_p16f_a_reset_target(void);
 int cf_p16f_a_mass_erase(void);
 int cf_p16f_a_reset_pointer(void);
 int cf_p16f_a_send_config(uint16_t data);

@@ -55,6 +55,11 @@ int cf_p16f_a_exit_progmode(void)
     return 0;
 }
 
+int cf_p16f_a_reset_target(void)
+{
+    return cf_p16f_a_exit_progmode();
+}
+
 int cf_p16f_a_mass_erase(void)
 {
     uint8_t buf[300];
@@ -267,6 +272,7 @@ chip_family_t cf_p16f_a = {
     .odd_mask = 0xc0,
     .enter_progmode     = cf_p16f_a_enter_progmode,
     .exit_progmode      = cf_p16f_a_exit_progmode,
+    .reset_target       = cf_p16f_a_reset_target,
     .mass_erase         = cf_p16f_a_mass_erase,
     .reset_pointer      = cf_p16f_a_reset_pointer,
     .increase_pointer   = cf_p16f_a_increase_pointer,
