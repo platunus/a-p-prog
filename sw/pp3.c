@@ -1433,7 +1433,7 @@ int main(int argc, char *argv[])
                 if (config == econfig) {
                     info_print("config 1 OK: %4.4X\n",config);
                 } else {
-                    printf("config 1 error: E:0x%4.4X R:0x%4.4X\n", config, econfig);
+                    printf("config 1 error: E:0x%4.4X R:0x%4.4X\n", econfig, config);
                     prog_exit_progmode();
                     exit(1);
                 }
@@ -1444,7 +1444,7 @@ int main(int argc, char *argv[])
                 if (config == econfig) {
                     info_print("config 2 OK: %4.4X\n", config);
                 } else {
-                    printf("config 2 error: E:0x%4.4X R:0x%4.4X\n",config,econfig);
+                    printf("config 2 error: E:0x%4.4X R:0x%4.4X\n", econfig, config);
                     prog_exit_progmode();
                     exit(1);
                 }
