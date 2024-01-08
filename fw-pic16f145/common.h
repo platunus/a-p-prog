@@ -50,7 +50,6 @@
 #endif
 
 void usb_send_data(uint8_t ep, uint8_t *data, size_t len);
-void usb_send_byte(uint8_t data);
 void usb_send_debug_string(char *str);
 void usb_send_debug_hex(uint32_t value);
 void pp_init(void (*sendbackp)(uint8_t data));
