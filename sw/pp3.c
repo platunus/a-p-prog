@@ -778,7 +778,7 @@ int legacy_pp3(void)
         printf("Wrong device ID: %4.4x, expected: %4.4x\n", i, devid_expected);
         printf("Check for connection to target MCU, exiting now\n");
         prog_exit_progmode();
-        return 1;
+        exit(1);
     }
 
     // ah, I need to unify programming interfaces for PIC16 and PIC18
