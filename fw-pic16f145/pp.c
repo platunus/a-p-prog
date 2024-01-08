@@ -24,7 +24,7 @@
  */
 
 #include <common.h>
-#include "../fw/pp/fw_pp_ops.h"
+#include "../fw/pp/pp_ops/fw_pp_ops.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -110,4 +110,4 @@ void pp_process(const uint8_t *data, size_t len)
     }
 }
 
-#include "../fw/pp/fw_pp_ops.c"
+#include "../fw/pp/pp_ops/fw_pp_ops.c"

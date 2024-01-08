@@ -5,7 +5,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-#include "fw_pp_ops.h"
+#include "pp_ops/fw_pp_ops.h"
 
 // #define DEBUG
 // #define DEBUG_VERBOSE
@@ -86,9 +86,7 @@ void usart_tx_b(uint8_t data);
 uint8_t usart_rx_rdy(void);
 uint8_t usart_rx_b(void);
 
-#ifdef PP_EXEC_OPS
 void exec_ops(uint8_t *ops, int n);
-#endif
 
 #if defined(DEBUG)
 #define debug_print(msg ...) do { \
@@ -343,13 +341,11 @@ void loop()
         p18qxx_bulk_erase();
         usart_tx_b(0xC3);
         break;
-#ifdef PP_EXEC_OPS
     case 0x80:
         debug_print("0x80: exec_ops: %02x %02x %02x %02x %02x ...",
                     rx_message[1], rx_message[2], rx_message[3], rx_message[4], rx_message[5]);
         exec_ops(&rx_message[2], rx_message[1]);
         break;
-#endif
     }
     rx_state = 0;
 }
@@ -1023,4 +1019,4 @@ uint8_t usart_rx_b(void)
 // #define fw_pp_ops_clk_delay() fw_pp_ops_delay(pp_params[PP_PARAM_CLK_DELAY])
 #define fw_pp_ops_clk_delay() DELAY
 
-#include "fw_pp_ops.c"
+#include "pp_ops/fw_pp_ops.c"

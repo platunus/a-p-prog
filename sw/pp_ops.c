@@ -1,7 +1,6 @@
 #include <string.h>
 #include "pp3.h"
 
-#if defined(PP_EXEC_OPS)
 static uint8_t buf[278];
 static int buf_len = 0;
 static int res_len = 0;
@@ -91,7 +90,6 @@ int pp_ops_write_isp(uint8_t *v, int n)
     return 0;
 }
 
-#if defined(PP_EXEC_OPS_RW_BITS)
 int pp_ops_read_isp_bits(int n)
 {
     int bytes = (pp_params[PP_PARAM_DATA_LEN] + 7) / 8;
@@ -151,7 +149,6 @@ int pp_ops_isp_send_multi(uint32_t v, int len, int n)
 {
     return pp_ops_isp_send_msb_multi(pp_util_revert_bit_order(v, len), len, n);
 }
-#endif  // PP_EXEC_OPS_RW_BITS
 
 int pp_ops_delay_us(int n)
 {
@@ -255,4 +252,3 @@ int pp_ops_write_isp_24(uint32_t v)
     buf[2] = (v >>  0) & 0xff;
     return pp_ops_write_isp(buf, 3);
 }
-#endif  // PP_EXEC_OPS

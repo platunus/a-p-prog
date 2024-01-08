@@ -26,10 +26,6 @@
 #ifndef __FW_PP_OPS_H__
 #define __FW_PP_OPS_H__
 
-#define PP_EXEC_OPS
-#define PP_EXEC_OPS_RW_BITS
-
-#if defined(PP_EXEC_OPS)
 enum {
     OP_NONE,
     OP_IO_MCLR,
@@ -37,10 +33,8 @@ enum {
     OP_IO_CLK,
     OP_READ_ISP,
     OP_WRITE_ISP,
-#if defined(PP_EXEC_OPS_RW_BITS)
     OP_READ_ISP_BITS,
     OP_WRITE_ISP_BITS,
-#endif
     OP_DELAY_US,
     OP_DELAY_10US,
     OP_DELAY_MS,
@@ -63,5 +57,5 @@ enum {
     PP_PARAM_DELAY3,
     PP_PARAM_NUM_PARAMS  // number of parameters
 };
-#endif  // PP_EXEC_OPS
+
 #endif  // __FW_PP_OPS_H__
