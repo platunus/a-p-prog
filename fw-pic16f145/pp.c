@@ -45,9 +45,9 @@
 #define fw_pp_ops_delay(n)    do { \
         uint8_t count = (n); \
         while (0 < count--) \
-            __delay_us(1); \
+            { NOP(); NOP(); NOP(); } \
     } while(0)
-#define fw_pp_ops_clk_delay() do { __delay_us(1); } while(0)
+#define fw_pp_ops_clk_delay() do { NOP(); } while(0)
 
 #define usart_tx_b(d) do { \
         sendback(d); \
