@@ -113,7 +113,9 @@ int cf_p18f_q_write_page(uint8_t *data, int address, int num)
     }
     cf_p16f_c_set_pc(address);
     pp_ops_write_isp_bits(buf, num);
-    pp_ops_reply(0xc6);
+    if (!(pp_fw_caps & PP_CAP_ASYNC_WRITE)) {
+        pp_ops_reply(0xc6);  // Remove waiting for completion to speed up
+    }
 
     n = sizeof(buf);
     pp_ops_exec(buf, &n);
