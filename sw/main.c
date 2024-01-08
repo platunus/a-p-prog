@@ -17,6 +17,7 @@ char *comm_port_name = NULL;
 char *input_file_name = NULL;
 int devid_expected, devid_mask, flash_size, page_size;
 unsigned char progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
+uint32_t pp_fw_caps = 0;
 
 chip_family_t *chip_families[] = {
     &cf_p16f_a,
@@ -234,6 +235,33 @@ int parseHex(char * filename, unsigned char * progmem, unsigned char * config)
     return 0;
 }
 
+int checkFW(void)
+{
+    uint8_t type, major, minor;
+
+    debug_print("Check firmware version and capabilities\n");
+    putByte(0x7f);  // request protocol version number
+    putByte(0x00);  // number of bytes remaining
+    getByte();
+    type = getByte();
+    major = getByte();
+    minor = getByte();
+    pp_fw_caps = getByte();
+
+    detail_print("FW protocol 0x%02X version %d.%d\n", type, major, minor);
+    if (type != PP_PROTO_TYPE_PPROG || major != PP_PROTO_MAJOR_VERSION) {
+        printf("FW protocol 0x%02X version %d.%d\n", type, major, minor);
+        printf("Error, FW protocol does not match\n");
+        exit(1);
+    }
+    if (minor < PP_PROTO_MINOR_VERSION) {
+        info_print("FW protocol version %d.%d is older than version %d.%d\n", major, minor,
+                   PP_PROTO_MAJOR_VERSION, PP_PROTO_MINOR_VERSION);
+    }
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int i, j, pages_performed, config, econfig;
@@ -255,9 +283,18 @@ int main(int argc, char *argv[])
     for (i = 0; i < CONFIG_LEN; i++)
         config_bytes[i] = 0xFF;
 
+    checkFW();
+    if (legacy_mode && !(pp_fw_caps & PP_CAP_LEGACY)) {
+        printf("Error, Firmware does not suppor legacy protocol\n");
+        exit(1);
+    }
     if (!legacy_mode)
         setCPUtype(cpu_type_name);
     if (cf == NULL) {
+        if (!(pp_fw_caps & PP_CAP_LEGACY)) {
+            printf("Error, Unsupported CPU type %s\n", cpu_type_name);
+            exit(1);
+        }
         info_print("Fall back to the legacy chip_family routines\n");
         legacy_pp3();
         // no return

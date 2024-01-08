@@ -54,6 +54,7 @@ extern char *input_file_name;
 
 extern int devid_expected, devid_mask, flash_size, page_size;
 extern unsigned char progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
+extern uint32_t pp_fw_caps;
 
 extern chip_family_t cf_p16f_a;
 extern chip_family_t cf_p18q43;

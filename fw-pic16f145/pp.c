@@ -102,6 +102,13 @@ void pp_process(const uint8_t *data, size_t len)
         if (state == 3) {
             state = 0;
             switch (pp_buf[0]) {
+            case 0x7f:
+                sendback(0xff);
+                sendback(PP_PROTO_TYPE_PPROG);
+                sendback(PP_PROTO_MAJOR_VERSION);
+                sendback(PP_PROTO_MINOR_VERSION);
+                sendback(PP_CAP_PP_OPS);
+                break;
             case 0x80:
                 exec_ops(&pp_buf[2], pp_buf[1]);
                 break;

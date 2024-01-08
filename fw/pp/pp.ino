@@ -341,6 +341,13 @@ void loop()
         p18qxx_bulk_erase();
         usart_tx_b(0xC3);
         break;
+    case 0x7f:
+        usart_tx_b(0xff);
+        usart_tx_b(PP_PROTO_TYPE_PPROG);
+        usart_tx_b(PP_PROTO_MAJOR_VERSION);
+        usart_tx_b(PP_PROTO_MINOR_VERSION);
+        usart_tx_b(PP_CAP_LEGACY | PP_CAP_PP_OPS);
+        break;
     case 0x80:
         debug_print("0x80: exec_ops: %02x %02x %02x %02x %02x ...",
                     rx_message[1], rx_message[2], rx_message[3], rx_message[4], rx_message[5]);
