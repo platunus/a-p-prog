@@ -183,7 +183,7 @@ static int cf_p18f_q_write_byte_cfg(uint8_t data, int address)
 
 int cf_p18f_q_write_config(uint8_t *data, int size)
 {
-    for (int i = 0; i < config_size; i++) {
+    for (int i = 0; i < size; i++) {
         cf_p18f_q_write_byte_cfg(config_bytes[i], CONFIG_ADDRESS + i);
     }
     return 0;
@@ -208,6 +208,7 @@ chip_family_t cf_p18q43 = {
     .config_size = 10,
     .enter_progmode = cf_p16f_c_enter_progmode,
     .exit_progmode = cf_p16f_a_exit_progmode,
+    .reset_target = cf_p16f_a_reset_target,
     .mass_erase = cf_p18f_qxx_mass_erase,
     .read_page = cf_p16f_c_read_page,
     .write_page = cf_p18f_q_write_page,
@@ -223,6 +224,7 @@ chip_family_t cf_p18q8x = {
     .config_size = 35,
     .enter_progmode = cf_p16f_c_enter_progmode,
     .exit_progmode = cf_p16f_a_exit_progmode,
+    .reset_target = cf_p16f_a_reset_target,
     .mass_erase = cf_p18f_qxx_mass_erase,
     .read_page = cf_p16f_c_read_page,
     .write_page = cf_p18f_q_write_page,

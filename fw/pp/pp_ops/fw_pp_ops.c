@@ -23,7 +23,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifdef PP_EXEC_OPS
 uint8_t pp_params[PP_PARAM_NUM_PARAMS] = { 0 };
 
 void send_bits(uint8_t d, uint8_t len)
@@ -120,7 +119,6 @@ void exec_ops(uint8_t *ops, int len)
             }
             fw_pp_ops_delay(3);  // XXX
             break;
-#ifdef PP_EXEC_OPS_RW_BITS
         case OP_READ_ISP_BITS:
             verbose_print("0x80: exec_ops:  READ_ISP_BITS %02x %02x", n, ops[2]);
             while (0 < n--) {
@@ -189,7 +187,6 @@ void exec_ops(uint8_t *ops, int len)
                 fw_pp_ops_delay(pp_params[PP_PARAM_DELAY3]);
             }
             break;
-#endif  // PP_EXEC_OPS_RW_BITS
         case OP_DELAY_US:
             verbose_print("0x80: exec_ops:       DELAY_US %d", n);
             fw_pp_ops_delay(n);
@@ -226,4 +223,3 @@ void exec_ops(uint8_t *ops, int len)
         ops += 2;
     }
 }
-#endif  // PP_EXEC_OPS

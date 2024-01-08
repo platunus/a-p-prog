@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "../fw/pp/fw_pp_ops.h"
+#include "../fw/pp/pp_ops/fw_pp_ops.h"
 
 #define	PROGMEM_LEN	260000
 #define	CONFIG_LEN	35
@@ -21,8 +21,6 @@ enum {
     CF_P18F_Q43,
     CF_P18F_Q8x,
     CF_P18F_Qxx,
-
-    CF_NO_LEGACY  // use this to prevent legacy if (chip_family == xxx) processing
 };
 
 typedef struct {
@@ -33,6 +31,7 @@ typedef struct {
     uint8_t odd_mask, even_mask;
     int (*enter_progmode)(void);
     int (*exit_progmode)(void);
+    int (*reset_target)(void);
     int (*mass_erase)(void);
     int (*reset_pointer)(void);
     int (*increase_pointer)(int num);
@@ -44,18 +43,36 @@ typedef struct {
 } chip_family_t;
 
 extern int verbose;
-extern int devid_mask, flash_size, page_size, chip_family, config_size;
-extern unsigned char file_image[70000], progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
+extern int verify;
+extern int program;
+extern int reset;
+extern int sleep_time;
+extern int reset_time;
+extern char *cpu_type_name;
+extern char *comm_port_name;
+extern char *input_file_name;
+
+extern int devid_expected, devid_mask, flash_size, page_size;
+extern unsigned char progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
+extern uint32_t pp_fw_caps;
 
 extern chip_family_t cf_p16f_a;
 extern chip_family_t cf_p18q43;
 extern chip_family_t cf_p18q8x;
 
-extern void sleep_us(int num);
-extern void putByte(int byte);
-extern int getByte(void);
-extern void flsprintf(FILE* f, char *fmt, ...);
+// main.c
+extern int is_empty(unsigned char *buff, int len);
 
+// pp3.c
+extern int legacy_pp3(void);
+
+// comm.c
+extern void initSerialPort(void);
+extern void putByte(int byte);
+extern void putBytes(unsigned char * data, int len);
+extern int getByte(void);
+
+// pp_ops.c
 extern void pp_ops_init(void);
 extern int pp_ops_io_mclr(int v);
 extern int pp_ops_io_dat_in(void);
@@ -64,7 +81,6 @@ extern int pp_ops_io_clk_in(void);
 extern int pp_ops_io_clk_out(int v);
 extern int pp_ops_read_isp(int n);
 extern int pp_ops_write_isp(uint8_t *v, int n);
-#if defined(PP_EXEC_OPS_RW_BITS)
 extern int pp_ops_read_isp_bits(int n);
 extern int pp_ops_write_isp_bits(uint8_t *v, int n);
 extern int pp_ops_isp_send_msb_multi(uint32_t v, int len, int n);
@@ -75,7 +91,7 @@ static inline int pp_ops_isp_send_msb(uint32_t v, int len) {
 static inline int pp_ops_isp_send(uint32_t v, int len) {
     return pp_ops_isp_send_multi(v, len, 1);
 }
-#endif
+
 extern int pp_ops_delay_us(int n);
 extern int pp_ops_delay_ms(int n);
 extern int pp_ops_reply(uint8_t v);
@@ -85,27 +101,33 @@ extern int pp_ops_exec(uint8_t *v, int *n);
 extern int pp_ops_write_isp_8(uint8_t v);
 extern int pp_ops_write_isp_24(uint32_t v);
 
+// pp_util.c
 extern uint32_t pp_util_revert_bit_order(uint32_t v, int n);
 extern void pp_util_hexdump(const char *header, uint32_t addr_offs, const void *data, int size);
+extern void pp_util_flush_printf(FILE* f, char *fmt, ...);
+extern size_t pp_util_getline(char **lineptr, size_t *n, FILE *stream);
+extern void sleep_ms(int num);
+extern void sleep_us(int num);
 
 #define pp_ops(f) do { int res = pp_ops_ ## f; if (res != 0) { \
         return res; \
     } } while (0)
 
 #define info_print(fmt ...) do { if (verbose > 0) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define detail_print(fmt ...) do { if (verbose > 1) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define debug_print(fmt ...) do { if (verbose > 2) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define verbose_print(fmt ...) do { if (verbose > 3) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 #define dump_print(fmt ...) do { if (verbose > 4) \
-            flsprintf(stdout, fmt); } while (0)
+            pp_util_flush_printf(stdout, fmt); } while (0)
 
 // CF_P16F_A
 int cf_p16f_a_enter_progmode(void);
 int cf_p16f_a_exit_progmode(void);
+int cf_p16f_a_reset_target(void);
 int cf_p16f_a_mass_erase(void);
 int cf_p16f_a_reset_pointer(void);
 int cf_p16f_a_send_config(uint16_t data);
