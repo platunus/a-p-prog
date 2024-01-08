@@ -21,8 +21,6 @@ enum {
     CF_P18F_Q43,
     CF_P18F_Q8x,
     CF_P18F_Qxx,
-
-    CF_NO_LEGACY  // use this to prevent legacy if (chip_family == xxx) processing
 };
 
 typedef struct {
@@ -45,14 +43,27 @@ typedef struct {
 } chip_family_t;
 
 extern int verbose;
+extern int verify;
+extern int program;
+extern int reset;
+extern int sleep_time;
+extern int reset_time;
+extern char *cpu_type_name;
 extern char *comm_port_name;
+extern char *input_file_name;
 
-extern int devid_mask, flash_size, page_size, chip_family, config_size;
-extern unsigned char file_image[70000], progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
+extern int devid_expected, devid_mask, flash_size, page_size;
+extern unsigned char progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 
 extern chip_family_t cf_p16f_a;
 extern chip_family_t cf_p18q43;
 extern chip_family_t cf_p18q8x;
+
+// main.c
+extern int is_empty(unsigned char *buff, int len);
+
+// pp3.c
+extern int legacy_pp3(void);
 
 // comm.c
 extern void initSerialPort(void);

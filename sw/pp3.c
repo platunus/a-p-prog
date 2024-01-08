@@ -4,112 +4,13 @@
 #include <unistd.h>
 #include <string.h>
 
-char * PP_VERSION = "0.99";
-
-int verbose = 1, verify = 1, program = 1;
-int legacy_mode = 0;
-int reset = 0;
-// set a proper init value for sleep time to avoid a lot of issues such as 'rx fail'.
-int sleep_time = 2000;
-int reset_time = 30;
-char *cpu_type_name = NULL;
-char *comm_port_name = NULL;
-int devid_expected, devid_mask, flash_size, page_size, chip_family, config_size;
-unsigned char file_image[70000], progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
-
-chip_family_t *chip_families[] = {
-    &cf_p16f_a,
-    &cf_p18q43,
-    &cf_p18q8x,
-    NULL
-};
-chip_family_t *cf = NULL;
-
-int is_empty(unsigned char *buff, int len)
-{
-    int i,empty;
-    empty = 1;
-    for (i = 0; i < len; i++) {
-        if (buff[i] != 0xFF) {
-            empty = 0;
-        }
-    }
-    return empty;
-}
-
-void printHelp()
-{
-    printf("pp programmer\n");
-    printf("Usage:\n");
-    printf("-c PORT : serial port device\n");
-    printf("-t MODEL : target MCU model, such as '16f1824'\n");
-    printf("-s TIME : sleep time in ms while arduino bootloader expires (default: 2000)\n");
-    printf("-r TIME : reset target and sleep time in ms before programming (default: 30)\n");
-    printf("-v NUM : verbose output level (default: 1)\n");
-    printf("-n : skip verify after program\n");
-    printf("-p : skip program \n");
-    printf("-L : force to use legacy chip_family routines\n");
-    printf("-V : Just verify withouy program\n");
-    printf("-h : show this help message and exit\n");
-}
-
-void parseArgs(int argc, char *argv[])
-{
-    int c;
-    while ((c = getopt(argc, argv, "c:npLVhs:r:t:v:")) != -1) {
-        switch (c) {
-        case 'c' :
-            comm_port_name = optarg;
-            break;
-        case 'n':
-            verify = 0;
-            break;
-        case 'p':
-            program = 0;
-            // skip program means also skip verify.
-            verify = 0;
-            break;
-        case 'L':
-            legacy_mode = 1;
-            break;
-        case 'V':
-            program = 0;
-            verify = 1;
-            break;
-        case 's' :
-            sscanf(optarg,"%d",&sleep_time);
-            break;
-        case 'r' :
-            reset = 1;
-            sscanf(optarg,"%d",&reset_time);
-            break;
-        case 't' :
-            cpu_type_name = strdup(optarg);
-            break;
-        case 'v' :
-            sscanf(optarg,"%d",&verbose);
-            break;
-        case 'h' :
-            printHelp();
-            exit(0);
-        case '?' :
-            if (isprint (optopt))
-                fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-            else
-                fprintf(stderr,"Unknown option character `\\x%x'.\n",optopt);
-        default:
-            fprintf(stderr,"Bug, unhandled option '%c'\n",c);
-            abort();
-        }
-    }
-    if (argc<=1)
-        printHelp();
-    }
+static unsigned char file_image[70000];
+static int chip_family, config_size;
 
 /*
  * programming routines
  */
-int setCPUtype(char* cpu)
+static int setCPUtype(char* cpu)
 {
     int name_len, i, read;
     name_len = strlen(cpu);
@@ -141,31 +42,13 @@ int setCPUtype(char* cpu)
                     &read_flash_size,&read_page_size,&read_id,&read_mask,(char*)&read_algo_type);
             dump_print("\n*** %s,%d,%d,%x,%x,%s", read_cpu_type,
                        read_flash_size, read_page_size, read_id, read_mask, read_algo_type);
-            if (strcmp(read_cpu_type,cpu) != 0)
-                continue;
-
-            flash_size = read_flash_size;
-            page_size = read_page_size;
-            devid_expected = read_id;
-            devid_mask = read_mask;
-            info_print("Found database match %s,%d,%d,%x,%x,%s\n", read_cpu_type,
-                       read_flash_size, read_page_size, read_id, read_mask, read_algo_type);
-            cf = NULL;
-            if (!legacy_mode) {
-                for (i = 0; chip_families[i] != NULL; i++) {
-                    if (strcmp(chip_families[i]->name, read_algo_type) == 0) {
-                        cf = chip_families[i];
-                        break;
-                    }
-                }
-            }
-            if (cf != NULL) {
-                // set chip_family to CF_NO_LEGACY
-                // this prevent legacy if (chip_family == xxx) processing
-                chip_family = CF_NO_LEGACY;
-                config_size = cf->config_size;
-            } else {
-                info_print("Fall back to the legacy chip_family routines\n");
+            if (strcmp(read_cpu_type,cpu) == 0) {
+                flash_size = read_flash_size;
+                page_size = read_page_size;
+                devid_expected = read_id;
+                devid_mask = read_mask;
+                info_print("Found database match %s,%d,%d,%x,%x,%s\n", read_cpu_type,
+                           read_flash_size, read_page_size, read_id, read_mask, read_algo_type);
 
                 if (strcmp("CF_P16F_A",   read_algo_type) == 0) chip_family = CF_P16F_A;
                 if (strcmp("CF_P16F_B",   read_algo_type) == 0) chip_family = CF_P16F_B;
@@ -705,9 +588,6 @@ int p18q_read_cfg(unsigned char * data, int address, unsigned char num)
 
 int prog_enter_progmode(void)
 {
-    if (cf)
-        return cf->enter_progmode();
-
     debug_print("Entering programming mode\n");
     if (chip_family==CF_P16F_A) putByte(0x01);
     else if (chip_family==CF_P16F_B) putByte(0x01);
@@ -727,9 +607,6 @@ int prog_enter_progmode(void)
 
 int prog_exit_progmode(void)
 {
-    if (cf)
-        return cf->exit_progmode();
-
     debug_print( "Exiting programming mode\n");
     putByte(0x02);
     putByte(0x00);
@@ -739,9 +616,6 @@ int prog_exit_progmode(void)
 
 int prog_reset(void)
 {
-    if (cf)
-        return cf->reset_target();
-
     return prog_exit_progmode();
 }
 
@@ -750,8 +624,6 @@ int prog_get_device_id(void)
     unsigned char mem_str[10];
     unsigned int devid;
     debug_print("getting ID for family %d\n",chip_family);
-    if (cf)
-        return cf->get_device_id();
 
     if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D))
         return p16a_get_devid();
@@ -777,7 +649,7 @@ int prog_get_device_id(void)
  * hex parse and main function
  */
 
-int parseHex(char * filename, unsigned char * progmem, unsigned char * config)
+static int parseHex(char * filename, unsigned char * progmem, unsigned char * config)
 {
     char * line = NULL;
     unsigned char line_content[128];
@@ -819,13 +691,6 @@ int parseHex(char * filename, unsigned char * progmem, unsigned char * config)
                 for (i = 0; i < line_len; i++)
                     progmem[effective_address+i] = line_content[i];
             }
-            if (cf &&
-                cf->config_address <= effective_address &&
-                effective_address < cf->config_address + cf->config_address) {
-                dump_print("CB ");
-                for (i = 0; i < line_len; i++)
-                    config[effective_address - cf->config_address + i] = line_content[i];
-            }
             if ((line_address_offset == 0x30) &&
                 ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_D)|(chip_family==CF_P18F_E)|
                  (chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|(chip_family==CF_P18F_Qxx))) {
@@ -857,26 +722,18 @@ int parseHex(char * filename, unsigned char * progmem, unsigned char * config)
     return 0;
 }
 
-int main(int argc, char *argv[])
+int legacy_pp3(void)
 {
     int i, j, pages_performed, config, econfig;
     unsigned char *pm_point, *cm_point;
     unsigned char tdat[200];
-    parseArgs(argc, argv);
+
     setCPUtype(cpu_type_name);
     // check setCPUtype works or not.
     if (flash_size == 0) {
           printf("Please use '-t MODEL' to specify correct PIC model, such as '16f1824'\n");
           exit(1);
     }
-    if (comm_port_name == NULL) {
-        printf("Please use '-c PORT' to specify correct serial device\n");
-        exit(1);
-    }
-    info_print("PP programmer, version %s\n", PP_VERSION);
-
-    info_print("Opening serial port\n");
-    initSerialPort();
 
     if (sleep_time > 0) {
         info_print("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
@@ -884,15 +741,9 @@ int main(int argc, char *argv[])
         sleep_ms(sleep_time);
     }
 
-    for (i = 0; i < PROGMEM_LEN; i++)
-        progmem[i] = 0xFF;  // assume erased memories (0xFF)
-    for (i = 0; i < CONFIG_LEN; i++)
-        config_bytes[i] = 0xFF;
-
-    char* filename = argv[argc-1];
     pm_point = (unsigned char *)(&progmem);
     cm_point = (unsigned char *)(&config_bytes);
-    if ((program || verify) && parseHex(filename, pm_point, cm_point)) {
+    if ((program || verify) && parseHex(input_file_name, pm_point, cm_point)) {
         // parse and write content of hex file into buffers
         fprintf(stderr,"Failed to read input file.\n");
         abort();
@@ -930,76 +781,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (cf) {
-        if (program) {
-            pages_performed = 0;
-            cf->mass_erase();
-            info_print("Programming FLASH (%d B in %d pages per %d bytes): \n", flash_size,
-                       flash_size / page_size, page_size);
-            fflush(stdout);
-            if (cf->reset_pointer)
-                cf->reset_pointer();
-            for (i = 0; i < flash_size; i += page_size) {
-                if (!is_empty(progmem + i, page_size)) {
-                    cf->write_page(progmem + i, i, page_size);
-                    pages_performed++;
-                    info_print("#");
-                } else {
-                    detail_print(".");
-                    if (cf->increase_pointer)
-                        cf->increase_pointer(page_size);
-                }
-            }
-
-            info_print("\n%d pages programmed\n",pages_performed);
-            info_print("Programming config\n");
-            cf->write_config(config_bytes, cf->config_size);
-        }
-        if (verify) {
-            pages_performed = 0;
-            info_print("Verifying FLASH (%d B in %d pages per %d bytes): \n",flash_size,
-                       flash_size/page_size,page_size);
-            if (cf->reset_pointer)
-                cf->reset_pointer();
-            for (i = 0; i < flash_size; i = i + page_size) {
-                if (is_empty(progmem+i,page_size)) {
-                    detail_print(".");
-                    if (cf->increase_pointer)
-                        cf->increase_pointer(page_size);
-                } else {
-                    cf->read_page(tdat, i, page_size);
-                    pages_performed++;
-                    verbose_print("Verifying page at 0x%4.4X\n", i);
-                    info_print("#");
-                    for (j = 0; j < page_size; j++) {
-                        uint8_t mask = (j % 2) ? ~cf->odd_mask : ~cf->even_mask;
-                        if ((progmem[i + j] & mask) != (tdat[j] & mask)) {
-                            printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n", i + j,
-                                    progmem[i + j], tdat[j]);
-                            printf("Exiting now\n");
-                            prog_exit_progmode();
-                            exit(1);
-                        }
-                    }
-                }
-            }
-            info_print("\n%d pages verified\n", pages_performed);
-
-            info_print("Verifying config...");
-            cf->read_config(tdat, cf->config_size);
-            for (i = 0; i < cf->config_size; i++) {
-                uint8_t mask = (i % 2) ? ~cf->odd_mask : ~cf->even_mask;
-                if ((config_bytes[i] & mask) != (tdat[i] & mask)) {
-                    printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
-                           i, config_bytes[i], tdat[i]);
-                    printf("Exiting now\n");
-                    prog_exit_progmode();
-                    exit(1);
-                }
-            }
-            info_print("OK\n");
-        }
-    } else
     // ah, I need to unify programming interfaces for PIC16 and PIC18
     if ((chip_family==CF_P18F_A)|(chip_family==CF_P18F_B)|(chip_family==CF_P18F_D)|
         (chip_family==CF_P18F_E)|(chip_family==CF_P18F_F)|(chip_family==CF_P18F_Q)|

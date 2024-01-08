@@ -9,6 +9,7 @@ all: pp3
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+OBJS+=main.o
 OBJS+=pp3.o
 OBJS+=comm.o
 OBJS+=pp_ops.o

@@ -183,7 +183,7 @@ static int cf_p18f_q_write_byte_cfg(uint8_t data, int address)
 
 int cf_p18f_q_write_config(uint8_t *data, int size)
 {
-    for (int i = 0; i < config_size; i++) {
+    for (int i = 0; i < size; i++) {
         cf_p18f_q_write_byte_cfg(config_bytes[i], CONFIG_ADDRESS + i);
     }
     return 0;
