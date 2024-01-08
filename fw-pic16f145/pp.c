@@ -107,7 +107,7 @@ void pp_process(const uint8_t *data, size_t len)
                 sendback(PP_PROTO_TYPE_PPROG);
                 sendback(PP_PROTO_MAJOR_VERSION);
                 sendback(PP_PROTO_MINOR_VERSION);
-                sendback(PP_CAP_PP_OPS);
+                sendback(PP_CAP_PP_OPS | PP_CAP_ASYNC_WRITE);
                 break;
             case 0x80:
                 exec_ops(&pp_buf[2], pp_buf[1]);
