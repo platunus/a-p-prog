@@ -30,6 +30,11 @@
 #define _XTAL_FREQ 500000
 #define PORT_LED A5
 
+#elif defined _16F18313
+
+#define _XTAL_FREQ 1000000
+#define PORT_LED A5
+
 #else  // MCU SPECIFIC
 
 #error unsupported MCU
@@ -70,31 +75,6 @@
     SYSTEM_Initialize(void);
  */
 void SYSTEM_Initialize(void);
-
-/**
- * @Param
-    none
- * @Returns
-    none
- * @Description
-    Initializes the oscillator to the default states configured in the
- *                  MCC GUI
- * @Example
-    OSCILLATOR_Initialize(void);
- */
-void OSCILLATOR_Initialize(void);
-
-/**
-   @Param
-    none
-   @Returns
-    none
-   @Description
-    GPIO and peripheral I/O initialization
-   @Example
-    PIN_MANAGER_Initialize();
- */
-void PIN_MANAGER_Initialize(void);
 
 /**
  * @Param

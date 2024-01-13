@@ -64,12 +64,6 @@
 #pragma config WDTCWS = WDTCWSSW    // WDT Window Select->Software WDT window size control (WDTWS bits)
 #pragma config WDTCCS = SWC         // WDT Input Clock Selector->Software control, controlled by WDTCS bits
 
-void SYSTEM_Initialize(void)
-{
-    PIN_MANAGER_Initialize();
-    OSCILLATOR_Initialize();
-}
-
 void OSCILLATOR_Initialize(void)
 {
     // SCS FOSC; SPLLEN disabled; IRCF 500KHz_MF;
@@ -127,6 +121,12 @@ void PIN_MANAGER_Initialize(void)
 
 void PIN_MANAGER_IOC(void)
 {
+}
+
+void SYSTEM_Initialize(void)
+{
+    PIN_MANAGER_Initialize();
+    OSCILLATOR_Initialize();
 }
 
 #endif	// _12F1612
