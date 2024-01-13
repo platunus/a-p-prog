@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
         printf("Wrong device ID: %4.4x, expected: %4.4x\n", i, devid_expected);
         printf("Check for connection to target MCU, exiting now\n");
         cf->exit_progmode();
-        return 1;
+        exit(1);
     }
 
     if (program) {

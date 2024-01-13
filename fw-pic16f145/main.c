@@ -45,9 +45,15 @@ uint8_t uart_tx_buf_len = 0;
 uint8_t uart_tx_buf_head = 0;
 uint8_t turn_on_led = 0;
 
+uint8_t pp_res_buf[32];
+uint8_t pp_res_buf_len = 0;
+
 #define TICK_HZ 91
 #define LED_TICKS 5
 #define UART_FLUSH_TICKS 2
+
+void pp_send_res_byte(uint8_t data);
+void pp_flush_res_byte(void);
 
 void uart_init(void)
 {
@@ -101,7 +107,7 @@ int main(void)
     timer_init();
     led_init();
 
-    pp_init(usb_send_byte);
+    pp_init(pp_send_res_byte);
 
     GIE = 1;                // Enable interrupt
 
@@ -130,6 +136,8 @@ int main(void)
 
             usb_arm_out_endpoint(2);
             turn_on_led = LED_TICKS;
+
+            pp_flush_res_byte();
         }
 
         /*
@@ -196,7 +204,23 @@ void usb_send_data(uint8_t ep, uint8_t *data, size_t len)
 
 void usb_send_byte(uint8_t data)
 {
-    usb_send_data(2, &data, 1);
+}
+
+void pp_send_res_byte(uint8_t data)
+{
+    pp_res_buf[pp_res_buf_len++] = data;
+    if (sizeof(pp_res_buf) <= pp_res_buf_len) {
+        if (!usb_in_endpoint_halted(4)) {
+            usb_send_data(2, pp_res_buf, pp_res_buf_len);
+        }
+        pp_res_buf_len = 0;
+    }
+}
+
+void pp_flush_res_byte(void)
+{
+    usb_send_data(2, pp_res_buf, pp_res_buf_len);
+    pp_res_buf_len = 0;
 }
 
 void usb_send_debug_string(char *str)

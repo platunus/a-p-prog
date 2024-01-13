@@ -32,6 +32,7 @@
 
 #define PP_CAP_LEGACY   (1 << 0)
 #define PP_CAP_PP_OPS   (1 << 1)
+#define PP_CAP_ASYNC_WRITE  (1 << 2)
 
 enum {
     OP_NONE,

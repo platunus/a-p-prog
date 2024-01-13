@@ -217,8 +217,10 @@ int pp_ops_exec(uint8_t *v, int *n)
     putByte(0x80);
     putByte(buf_len & 0xff);
     for (int i = 0; i < buf_len; i++) {
-        // Without this delay Arduino Leonardo's USB serial might be stalled
-        sleep_us(5);
+        if (!(pp_fw_caps & PP_CAP_ASYNC_WRITE)) {
+            // Without this delay Arduino Leonardo's USB serial might be stalled
+            sleep_us(5);
+        }
         putByte(buf[i]);
     }
     for (int i = 0; i < buf_len && i < 2; i++) {

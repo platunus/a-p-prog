@@ -76,11 +76,6 @@ int cf_p16f_c_read_page(uint8_t *data, int address, int num)
     pp_ops_param_set(PP_PARAM_DATA_LEN, 16);
     pp_ops_param_set(PP_PARAM_POSTFIX_LEN, 1);
     pp_ops_reply(0xc1);
-    n = sizeof(buf);
-    pp_ops_exec(buf, &n);
-
-    pp_ops_init();
-    pp_ops_reply(0xc1);
     cf_p16f_c_set_pc(address);
     pp_ops_read_isp_bits(num);
 
@@ -112,19 +107,15 @@ int cf_p18f_q_write_page(uint8_t *data, int address, int num)
     pp_ops_param_set(PP_PARAM_DATA_LEN, 16);
     pp_ops_param_set(PP_PARAM_POSTFIX_LEN, 1);
     pp_ops_param_set(PP_PARAM_DELAY3, 75);
-    pp_ops_reply(0xc6);
-
-    n = sizeof(buf);
-    pp_ops_exec(buf, &n);
-
     for (i = 0; i < num; i += 2) {
         buf[i + 0] = data[i + 1];
         buf[i + 1] = data[i + 0];
     }
-    pp_ops_init();
     cf_p16f_c_set_pc(address);
     pp_ops_write_isp_bits(buf, num);
-    pp_ops_reply(0xc6);
+    if (!(pp_fw_caps & PP_CAP_ASYNC_WRITE)) {
+        pp_ops_reply(0xc6);  // Remove waiting for completion to speed up
+    }
 
     n = sizeof(buf);
     pp_ops_exec(buf, &n);

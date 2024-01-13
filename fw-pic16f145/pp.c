@@ -45,9 +45,9 @@
 #define fw_pp_ops_delay(n)    do { \
         uint8_t count = (n); \
         while (0 < count--) \
-            __delay_us(1); \
+            { NOP(); NOP(); NOP(); } \
     } while(0)
-#define fw_pp_ops_clk_delay() do { __delay_us(1); } while(0)
+#define fw_pp_ops_clk_delay() do { NOP(); } while(0)
 
 #define usart_tx_b(d) do { \
         sendback(d); \
@@ -107,7 +107,7 @@ void pp_process(const uint8_t *data, size_t len)
                 sendback(PP_PROTO_TYPE_PPROG);
                 sendback(PP_PROTO_MAJOR_VERSION);
                 sendback(PP_PROTO_MINOR_VERSION);
-                sendback(PP_CAP_PP_OPS);
+                sendback(PP_CAP_PP_OPS | PP_CAP_ASYNC_WRITE);
                 break;
             case 0x80:
                 exec_ops(&pp_buf[2], pp_buf[1]);

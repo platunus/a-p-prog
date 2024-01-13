@@ -30,11 +30,11 @@ void send_bits(uint8_t d, uint8_t len)
     if (len)
         verbose_print("%s: %02x (%d bits)", __func__, d, len);
     ISP_DAT_OUT;
-    for (int i = 0; i < len; i++) {
+    for (uint8_t i = 0; i < len; i++) {
         ISP_DAT(d & 0x80);
         fw_pp_ops_clk_delay();
         ISP_CLK(1);
-        fw_pp_ops_clk_delay();
+        // fw_pp_ops_clk_delay();
         d <<= 1;
         ISP_CLK(0);
         ISP_DAT(0);
@@ -43,7 +43,7 @@ void send_bits(uint8_t d, uint8_t len)
 
 void dummy_locks(uint8_t n)
 {
-    for (int i = 0; i < n; i++) {
+    for (uint8_t i = 0; i < n; i++) {
         fw_pp_ops_clk_delay();
         ISP_CLK(1);
         fw_pp_ops_clk_delay();
@@ -131,7 +131,7 @@ void exec_ops(uint8_t *ops, int len)
                 d = 0;
                 txbuf_len = 0;
                 for (i = 0; i < pp_params[PP_PARAM_DATA_LEN]; i++) {
-                    fw_pp_ops_clk_delay();
+                    // fw_pp_ops_clk_delay();
                     ISP_CLK(1);
                     fw_pp_ops_clk_delay();
                     ISP_CLK(0);
@@ -166,18 +166,23 @@ void exec_ops(uint8_t *ops, int len)
 
                 ISP_DAT(0);
                 dummy_locks(pp_params[PP_PARAM_PREFIX_LEN]);
+                d = ops[2];
+                ops++;
                 for (i = 0; i < pp_params[PP_PARAM_DATA_LEN]; i++) {
-                    if ((i % 8) == 0) {
+                    ISP_DAT(d & 0x80);
+                    d <<= 1;
+                    // fw_pp_ops_clk_delay();
+                    ISP_CLK(1);
+                    if ((i % 8) == 7) {
                         d = ops[2];
                         verbose_print("0x80: exec_ops: WRITE_ISP_BITS rx: %02x %02x", n, d);
                         ops++;
                     }
-                    ISP_DAT(d & 0x80);
-                    d <<= 1;
-                    fw_pp_ops_clk_delay();
-                    ISP_CLK(1);
-                    fw_pp_ops_clk_delay();
+                    // fw_pp_ops_clk_delay();
                     ISP_CLK(0);
+                }
+                if ((i % 8) == 0) {
+                    ops--;
                 }
                 ISP_DAT(0);
                 dummy_locks(pp_params[PP_PARAM_POSTFIX_LEN]);
