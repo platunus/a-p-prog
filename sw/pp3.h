@@ -145,6 +145,11 @@ int cf_p16f_c_set_pc(unsigned long pc);
 int cf_p16f_c_enter_progmode(void);
 int cf_p16f_c_read_page(uint8_t *data, int address, int num);
 
+// CF_P16F_D
+extern chip_family_t cf_p16f_d;
+int cf_p16f_d_reset_pointer(void);
+int cf_p16f_d_write_config(uint8_t *data, int size);
+
 // CF_P18F_Q
 int cf_p18f_q_write_page(uint8_t *data, int address, int num);
 int cf_p18f_q_read_config(uint8_t *data, int num);

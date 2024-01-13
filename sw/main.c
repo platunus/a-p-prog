@@ -22,6 +22,7 @@ uint32_t pp_fw_caps = 0;
 chip_family_t *chip_families[] = {
     &cf_p16f_a,
     &cf_p16f_b,
+    &cf_p16f_d,
     &cf_p18q43,
     &cf_p18q8x,
     NULL
