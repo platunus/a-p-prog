@@ -41,3 +41,14 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+example/hello-serial/build/
+**/MPLAB.X/build/
+**/MPLAB.X/dist/
+**/MPLAB.X/nbproject/Makefile-genesis.properties
+**/MPLAB.X/nbproject/Makefile-*.mk
+**/MPLAB.X/nbproject/Package-*.bash
+**/MPLAB.X/nbproject/private/
+**/MPLAB.X/build/
+**/MPLAB.X/dist
+**/MPLAB.X/funclist
+**/MPLAB.X/disassembly/
