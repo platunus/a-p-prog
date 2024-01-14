@@ -26,17 +26,18 @@
 #define MCC_H
 
 #if defined _12F1612
-
 #define _XTAL_FREQ 500000
 #define PORT_LED A5
 
 #elif defined _16F18313
-
 #define _XTAL_FREQ 1000000
 #define PORT_LED A5
 
-#else  // MCU SPECIFIC
+#elif defined _16F18857
+#define _XTAL_FREQ 1000000
+#define PORT_LED A0
 
+#else  // MCU SPECIFIC
 #error unsupported MCU
 
 #endif  // MCU SPECIFIC

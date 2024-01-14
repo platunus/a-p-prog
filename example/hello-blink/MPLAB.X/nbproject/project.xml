@@ -20,6 +20,10 @@
                     <name>PIC16F18313</name>
                     <type>2</type>
                 </confElem>
+                <confElem>
+                    <name>PIC16F18857</name>
+                    <type>2</type>
+                </confElem>
             </confList>
             <formatting>
                 <project-formatting-style>false</project-formatting-style>

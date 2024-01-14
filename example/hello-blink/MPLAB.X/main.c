@@ -12,9 +12,9 @@ void main(void)
     SYSTEM_Initialize();
 
     while(1) {
-        RA5 = 1;
+        IO_LAT(PORT_LED) = HIGH;
         __delay_ms(1000);
-        RA5 = 0;
+        IO_LAT(PORT_LED) = LOW;
         __delay_ms(1000);
     }
 }
