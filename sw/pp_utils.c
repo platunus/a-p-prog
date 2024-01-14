@@ -25,7 +25,7 @@ void pp_util_hexdump(const char *header, uint32_t addr_offs, const void *data, i
         } else {
             printf("   ");
         }
-        if (0x20 <= buf[i] && buf[i] <= 0x7e) {
+        if (i < size && 0x20 <= buf[i] && buf[i] <= 0x7e) {
             chars[i % 16] = buf[i];
         } else
         if (i < size) {
