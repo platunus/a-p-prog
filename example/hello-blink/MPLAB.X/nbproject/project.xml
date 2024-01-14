@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>com.microchip.mplab.nbide.embedded.makeproject</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/make-project/1">
+            <name>hello-blink</name>
+            <creation-uuid>39556fa9-6135-4f37-a40e-147e2bd6869f</creation-uuid>
+            <make-project-type>0</make-project-type>
+            <sourceEncoding>ISO-8859-1</sourceEncoding>
+            <make-dep-projects/>
+            <sourceRootList>
+                <sourceRootElem>..</sourceRootElem>
+            </sourceRootList>
+            <confList>
+                <confElem>
+                    <name>PIC16F1503</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>PIC12F1612</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>PIC16F18313</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>PIC16F18857</name>
+                    <type>2</type>
+                </confElem>
+            </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
+        </data>
+    </configuration>
+</project>

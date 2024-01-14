@@ -56,10 +56,6 @@ extern int devid_expected, devid_mask, flash_size, page_size;
 extern unsigned char progmem[PROGMEM_LEN], config_bytes[CONFIG_LEN];
 extern uint32_t pp_fw_caps;
 
-extern chip_family_t cf_p16f_a;
-extern chip_family_t cf_p18q43;
-extern chip_family_t cf_p18q8x;
-
 // main.c
 extern int is_empty(unsigned char *buff, int len);
 
@@ -82,6 +78,9 @@ extern int pp_ops_io_clk_out(int v);
 extern int pp_ops_read_isp(int n);
 extern int pp_ops_write_isp(uint8_t *v, int n);
 extern int pp_ops_read_isp_bits(int n);
+extern int pp_ops_isp_read_8_msb(void);
+extern int pp_ops_isp_send_8_msb(uint8_t v);
+extern int pp_ops_isp_send_24_msb(uint32_t v);
 extern int pp_ops_write_isp_bits(uint8_t *v, int n);
 extern int pp_ops_isp_send_msb_multi(uint32_t v, int len, int n);
 extern int pp_ops_isp_send_multi(uint32_t v, int len, int n);
@@ -125,6 +124,7 @@ extern void sleep_us(int num);
             pp_util_flush_printf(stdout, fmt); } while (0)
 
 // CF_P16F_A
+extern chip_family_t cf_p16f_a;
 int cf_p16f_a_enter_progmode(void);
 int cf_p16f_a_exit_progmode(void);
 int cf_p16f_a_reset_target(void);
@@ -138,10 +138,27 @@ int cf_p16f_a_read_config(uint8_t *data, int num);
 int cf_p16f_a_write_config(uint8_t *data, int size);
 int cf_p16f_a_get_devid(void);
 
+// CF_P16F_B
+extern chip_family_t cf_p16f_b;
+int cf_p16f_b_read_config(uint8_t *data, int num);
+int cf_p16f_b_write_config(uint8_t *data, int size);
+
 // CF_P16F_C
+extern chip_family_t cf_p16f_c;
 int cf_p16f_c_set_pc(unsigned long pc);
 int cf_p16f_c_enter_progmode(void);
+int cf_p16c_mass_erase(void);
 int cf_p16f_c_read_page(uint8_t *data, int address, int num);
+int cf_p16f_c_read_program(uint8_t *data, int address, int num);
+int cf_p16f_c_write_program(uint8_t *data, int address, int num);
+int cf_p16f_c_read_config(uint8_t *data, int num);
+int cf_p16f_c_write_config(uint8_t *data, int size);
+int cf_p16f_c_get_device_id(void);
+
+// CF_P16F_D
+extern chip_family_t cf_p16f_d;
+int cf_p16f_d_reset_pointer(void);
+int cf_p16f_d_write_config(uint8_t *data, int size);
 
 // CF_P18F_Q
 int cf_p18f_q_write_page(uint8_t *data, int address, int num);
@@ -150,4 +167,6 @@ int cf_p18f_q_write_config(uint8_t *data, int size);
 int cf_p18f_q_get_device_id(void);
 
 // CF_P18F_Qxx
+extern chip_family_t cf_p18q43;
+extern chip_family_t cf_p18q8x;
 int cf_p18f_qxx_mass_erase(void);

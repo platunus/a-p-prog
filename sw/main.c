@@ -21,6 +21,9 @@ uint32_t pp_fw_caps = 0;
 
 chip_family_t *chip_families[] = {
     &cf_p16f_a,
+    &cf_p16f_b,
+    &cf_p16f_c,
+    &cf_p16f_d,
     &cf_p18q43,
     &cf_p18q8x,
     NULL
@@ -353,6 +356,9 @@ int main(int argc, char *argv[])
 
         info_print("\n%d pages programmed\n",pages_performed);
         info_print("Programming config\n");
+        if (verbose > 2) {  // equivalent to debug_print() condition
+            pp_util_hexdump("Write config: ", 0, config_bytes, cf->config_size);
+        }
         cf->write_config(config_bytes, cf->config_size);
     }
     if (verify) {
@@ -376,6 +382,12 @@ int main(int argc, char *argv[])
                     if ((progmem[i + j] & mask) != (tdat[j] & mask)) {
                         printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n", i + j,
                                progmem[i + j], tdat[j]);
+                        if (verbose > 2) {  // equivalent to debug_print() condition
+                            pp_util_hexdump("      progmem: ", i + (j & ~0xf),
+                                            &progmem[i + (j & ~0xf)], 16);
+                            pp_util_hexdump(" Read program: ", i + (j & ~0xf),
+                                            &tdat[(j & ~0xf)], 16);
+                        }
                         printf("Exiting now\n");
                         cf->exit_progmode();
                         exit(1);
@@ -392,6 +404,10 @@ int main(int argc, char *argv[])
             if ((config_bytes[i] & mask) != (tdat[i] & mask)) {
                 printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
                        i, config_bytes[i], tdat[i]);
+                if (verbose > 2) {  // equivalent to debug_print() condition
+                    pp_util_hexdump("config_bytes: ", 0, config_bytes, cf->config_size);
+                    pp_util_hexdump(" Read config: ", 0, tdat, cf->config_size);
+                }
                 printf("Exiting now\n");
                 cf->exit_progmode();
                 exit(1);

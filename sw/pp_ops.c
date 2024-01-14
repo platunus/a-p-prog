@@ -90,6 +90,34 @@ int pp_ops_write_isp(uint8_t *v, int n)
     return 0;
 }
 
+int pp_ops_isp_read_8_msb(void)
+{
+    if (sizeof(buf) < buf_len + 2) {
+        return -1;
+    }
+    buf[buf_len++] = OP_READ_ISP;
+    buf[buf_len++] = 1;
+    res_len += 1;
+    return 0;
+}
+
+int pp_ops_isp_send_8_msb(uint8_t v)
+{
+    if (sizeof(buf) < buf_len + 2 + 1) {
+        return -1;
+    }
+    buf[buf_len++] = OP_WRITE_ISP;
+    buf[buf_len++] = 1;
+    buf[buf_len++] = v;
+
+    return 0;
+}
+
+int pp_ops_isp_send_24_msb(uint32_t v)
+{
+    return pp_ops_write_isp_24(v);
+}
+
 int pp_ops_read_isp_bits(int n)
 {
     int bytes = (pp_params[PP_PARAM_DATA_LEN] + 7) / 8;
