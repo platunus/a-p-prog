@@ -13,6 +13,10 @@
             </sourceRootList>
             <confList>
                 <confElem>
+                    <name>PIC16F1503</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
                     <name>PIC12F1612</name>
                     <type>2</type>
                 </confElem>

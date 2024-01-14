@@ -25,7 +25,11 @@
 #ifndef MCC_H
 #define MCC_H
 
-#if defined _12F1612
+#if defined _16F1503
+#define _XTAL_FREQ 500000
+#define PORT_LED A5
+
+#elif defined _12F1612
 #define _XTAL_FREQ 500000
 #define PORT_LED A5
 
