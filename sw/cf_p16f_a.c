@@ -220,10 +220,6 @@ int cf_p16f_a_read_config(uint8_t *data, int num)
     cf_p16f_a_read_page(&data[7 * 2], 0, 4);
 
     debug_print("%s: num=%d\n", __func__, num);
-    if (verbose > 2) {  // equivalent to debug_print() condition
-        pp_util_hexdump("config_bytes: ", 0, config_bytes, num);
-        pp_util_hexdump(" Read config: ", 0, data, num);
-    }
 
     return 0;
 }

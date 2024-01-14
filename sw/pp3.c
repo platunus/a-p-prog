@@ -936,14 +936,19 @@ int legacy_pp3(void)
                     if (file_image[i+j] != tdat[j]) {
                         printf("\nError at program address 0x%06X E:0x%02X R:0x%02X\n",
                                i + j, file_image[i + j], tdat[j]);
+                        if (verbose > 2) {  // equivalent to debug_print() condition
+                            pp_util_hexdump("   file_image: ", i, &progmem[i], page_size);
+                            pp_util_hexdump(" Read program: ", i, tdat, page_size);
+                        }
                         prog_exit_progmode();
                         exit(1);
                     }
                 }
             }
             info_print("\n");
-            info_print("Verifying config\n");
+            info_print("Verifying config...");
             if ((chip_family==CF_P16F_A)|(chip_family==CF_P16F_B)|(chip_family==CF_P16F_D)) {
+                info_print("\n");
                 config = p16a_get_config(7);
                 econfig = (((unsigned int)(file_image[2*0x8007]))<<0) +
                     (((unsigned int)(file_image[2*0x8007+1]))<<8);
@@ -971,11 +976,16 @@ int legacy_pp3(void)
                 for (j = 0; j < 10; j++) {
                     if (config_bytes[j] != tdat[j]) {
                         printf("Error at config address 0x%02X E:0x%02X R:0x%02X\n",
-                                i + j, config_bytes[j], tdat[j]);
+                                7*2 + j, config_bytes[j], tdat[j]);
+                        if (verbose > 2) {  // equivalent to debug_print() condition
+                            pp_util_hexdump(" config_bytes: ", i, config_bytes, 10);
+                            pp_util_hexdump("  Read config: ", i, tdat, 10);
+                        }
                         prog_exit_progmode();
                         exit(1);
                     }
                 }
+                info_print("OK\n");
             }
         }
     }

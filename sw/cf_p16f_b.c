@@ -12,10 +12,6 @@ int cf_p16f_b_read_config(uint8_t *data, int num)
     cf_p16f_a_read_page(&data[7 * 2], 0, num - (7 * 2));
 
     debug_print("%s: num=%d\n", __func__, num);
-    if (verbose > 2) {  // equivalent to debug_print() condition
-        pp_util_hexdump("config_bytes: ", 0, config_bytes, num);
-        pp_util_hexdump(" Read config: ", 0, data, num);
-    }
 
     return 0;
 }
@@ -23,9 +19,6 @@ int cf_p16f_b_read_config(uint8_t *data, int num)
 int cf_p16f_b_write_config(uint8_t *data, int size)
 {
     debug_print("%s: num=%d\n", __func__, size);
-    if (verbose > 2) {  // equivalent to debug_print() condition
-        pp_util_hexdump("Write config: ", 0, data, size);
-    }
 
     cf_p16f_a_reset_pointer();
     cf_p16f_a_send_config(0);

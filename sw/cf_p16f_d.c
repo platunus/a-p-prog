@@ -25,9 +25,6 @@ int cf_p16f_d_reset_pointer(void)
 int cf_p16f_d_write_config(uint8_t *data, int size)
 {
     debug_print("%s: num=%d\n", __func__, size);
-    if (verbose > 2) {  // equivalent to debug_print() condition
-        pp_util_hexdump("Write config: ", 0, data, size);
-    }
 
     cf_p16f_a_reset_pointer();
     cf_p16f_a_send_config(0);
