@@ -9,7 +9,7 @@ int cf_p16f_b_read_config(uint8_t *data, int num)
     cf_p16f_a_reset_pointer();
     cf_p16f_a_send_config(0);
     cf_p16f_a_increase_pointer(7 * 2);
-    cf_p16f_a_read_page(&data[7 * 2], 0, 6);
+    cf_p16f_a_read_page(&data[7 * 2], 0, num - (7 * 2));
 
     debug_print("%s: num=%d\n", __func__, num);
     if (verbose > 2) {  // equivalent to debug_print() condition
