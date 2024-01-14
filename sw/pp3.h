@@ -144,9 +144,16 @@ int cf_p16f_b_read_config(uint8_t *data, int num);
 int cf_p16f_b_write_config(uint8_t *data, int size);
 
 // CF_P16F_C
+extern chip_family_t cf_p16f_c;
 int cf_p16f_c_set_pc(unsigned long pc);
 int cf_p16f_c_enter_progmode(void);
+int cf_p16c_mass_erase(void);
 int cf_p16f_c_read_page(uint8_t *data, int address, int num);
+int cf_p16f_c_read_program(uint8_t *data, int address, int num);
+int cf_p16f_c_write_program(uint8_t *data, int address, int num);
+int cf_p16f_c_read_config(uint8_t *data, int num);
+int cf_p16f_c_write_config(uint8_t *data, int size);
+int cf_p16f_c_get_device_id(void);
 
 // CF_P16F_D
 extern chip_family_t cf_p16f_d;
