@@ -104,8 +104,8 @@ const ROMPTR struct device_descriptor this_device_descriptor =
          Association Descriptor Device Class Code and Use Model" */
     0x01, // Protocol. See document referenced above.
     EP_0_LEN, // bMaxPacketSize0
-    0xA0A0, // Vendor
-    0x0004, // Product
+    0x1209, // Vendor
+    0x8801, // Product  https://pid.codes/1209/8801/
     0x0001, // device release (1.0)
     1, // Manufacturer
     2, // Product
@@ -145,7 +145,7 @@ static const ROMPTR struct configuration_1_packet configuration_1 =
     CDC_COMMUNICATION_INTERFACE_CLASS,
     CDC_COMMUNICATION_INTERFACE_CLASS_ACM_SUBCLASS,
     0, /* bFunctionProtocol */
-    2, /* iFunction (string descriptor index) */
+    6, /* iFunction (string descriptor index) */
     },
 
     /* CDC Class Interface */
@@ -242,7 +242,7 @@ static const ROMPTR struct configuration_1_packet configuration_1 =
     CDC_COMMUNICATION_INTERFACE_CLASS,
     CDC_COMMUNICATION_INTERFACE_CLASS_ACM_SUBCLASS,
     0, /* bFunctionProtocol */
-    2, /* iFunction (string descriptor index) */
+    7, /* iFunction (string descriptor index) */
     },
 
     /* CDC Class Interface 2 */
@@ -349,16 +349,16 @@ static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t la
     0x0409 // US English
 };
 
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[23]; } vendor_string = {
+static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[9]; } vendor_string = {
     sizeof(vendor_string),
     DESC_STRING,
-    {'S','i','g','n','a','l',' ','1','1',' ','S','o','f','t','w','a','r','e',' ','L','L','C','.'}
+    {'@','h','a','n','y','a','z','o','u'}
 };
 
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[12]; } product_string = {
+static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[11]; } product_string = {
     sizeof(product_string),
     DESC_STRING,
-    {'U','S','B',' ','C','D','C',' ','T','e','s','t',}
+    {'S','u','p','e','r','E','M','U','Z','8','0'}
 };
 
 static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[13]; } cdc_interface_string = {
@@ -373,14 +373,22 @@ static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t ch
     {'C','D','C',' ','D','a','t','a',' ','I','n','t','e','r','f','a','c','e'}
 };
 
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[59]; } fake_serial_num = {
-    sizeof(fake_serial_num),
+static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[10]; } serial_num_string = {
+    sizeof(serial_num_string),
     DESC_STRING,
-    {'F','A','K','E',' ','S','e','r','i','a','l',' ',
-     'N','u','m','b','e','r',':',' ',
-     'D','o','n','\'','t',' ','s','h','i','p',' ','a',' ',
-     'p','r','o','d','u','c','t',' ','l','i','k','e',' ',
-     't','h','i','s','.',' ','P','L','E','A','S','E','!', }
+    {'0','0','0','0','0','0','0','0','0','0'}
+};
+
+static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[14]; } func_prog_string = {
+    sizeof(cdc_data_string),
+    DESC_STRING,
+    {'P','I','C',' ','p','r','o','g','r','a','m','m','e','r'}
+};
+
+static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[6]; } func_serial_string = {
+    sizeof(cdc_data_string),
+    DESC_STRING,
+    {'S','e','r','i','a','l'}
 };
 
 
@@ -417,16 +425,16 @@ int16_t usb_application_get_string(uint8_t string_number, const void **ptr)
         return sizeof(cdc_data_string);
     }
     else if (string_number == 5) {
-        /* This is where you will have code to do something like read
-         * a serial number out of EEPROM and return it. For CDC
-         * devices, this is a MUST.
-         *
-         * However, since this is a demo, we will return a fake,
-         * hard-coded serial number here. PLEASE don't ship products
-         * like this. If you do, your customers will be mad as soon
-         * as they plug two of your devices in at the same time. */
-        *ptr = &fake_serial_num;
-        return sizeof(fake_serial_num);
+        *ptr = &serial_num_string;
+        return sizeof(serial_num_string);
+    }
+    else if (string_number == 6) {
+        *ptr = &func_prog_string;
+        return sizeof(func_prog_string);
+    }
+    else if (string_number == 7) {
+        *ptr = &func_serial_string;
+        return sizeof(func_serial_string);
     }
 
     return -1;
