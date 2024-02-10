@@ -344,7 +344,7 @@ int main(int argc, char *argv[])
             cf->reset_pointer();
         for (i = 0; i < flash_size; i += page_size) {
             if (!is_empty(progmem + i, page_size)) {
-                cf->write_page(progmem + i, i, page_size);
+                cf->write_program(progmem + i, i, page_size);
                 pages_performed++;
                 info_print("#");
             } else {
@@ -373,7 +373,7 @@ int main(int argc, char *argv[])
                 if (cf->increase_pointer)
                     cf->increase_pointer(page_size);
             } else {
-                cf->read_page(tdat, i, page_size);
+                cf->read_program(tdat, i, page_size);
                 pages_performed++;
                 verbose_print("Verifying page at 0x%4.4X\n", i);
                 info_print("#");
