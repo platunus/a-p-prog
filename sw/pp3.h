@@ -35,8 +35,8 @@ typedef struct {
     int (*mass_erase)(void);
     int (*reset_pointer)(void);
     int (*increase_pointer)(int num);
-    int (*read_page)(uint8_t *data, int address, int num);
-    int (*write_page)(uint8_t *data, int address, int num);
+    int (*read_program)(uint8_t *data, int address, int num);
+    int (*write_program)(uint8_t *data, int address, int num);
     int (*read_config)(uint8_t *data, int size);
     int (*write_config)(uint8_t *data, int size);
     int (*get_device_id)(void);
