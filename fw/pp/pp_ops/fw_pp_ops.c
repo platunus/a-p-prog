@@ -53,7 +53,7 @@ void dummy_locks(uint8_t n)
 
 void exec_ops(uint8_t *ops, int len)
 {
-    uint8_t i, n, t, d;
+    uint8_t i, n, d;
     uint8_t *endp = &ops[len];
     uint8_t txbuf[4];
     uint8_t txbuf_len;

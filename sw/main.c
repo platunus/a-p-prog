@@ -286,11 +286,18 @@ int main(int argc, char *argv[])
     for (i = 0; i < CONFIG_LEN; i++)
         config_bytes[i] = 0xFF;
 
+    if (sleep_time > 0) {
+        info_print("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
+        fflush(stdout);
+        sleep_ms(sleep_time);
+    }
+
     checkFW();
     if (legacy_mode && !(pp_fw_caps & PP_CAP_LEGACY)) {
         printf("Error, Firmware does not suppor legacy protocol\n");
         exit(1);
     }
+
     if (!legacy_mode)
         setCPUtype(cpu_type_name);
     if (cf == NULL) {
@@ -301,12 +308,6 @@ int main(int argc, char *argv[])
         info_print("Fall back to the legacy chip_family routines\n");
         legacy_pp3();
         // no return
-    }
-
-    if (sleep_time > 0) {
-        info_print("Sleeping for %d ms while arduino bootloader expires\n", sleep_time);
-        fflush(stdout);
-        sleep_ms(sleep_time);
     }
 
     pm_point = (unsigned char *)(&progmem);
