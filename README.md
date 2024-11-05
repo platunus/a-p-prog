@@ -53,6 +53,22 @@ Ensure JP2 is closed, then you can load new firmware into PIC programmer using r
 The firmware should be able to compile outside Arduino IDE as it doesn't contain any Arduino-specific stuff, though I haven't tried that.
 
 
+### Hardware option 3 - WCH CH552/CH554
+Take WCH CH552/CH554 with USB device PHY. Considering the target has its own power supply, connect GND, MCLR, PGC and PGD lines to respective pins on CH55x as follows:
+
+| CH55x pin | Target PIC pin | Comment                                                                     |
+|-----------|----------------|-----------------------------------------------------------------------------|
+| GND       | GND            | common ground                                                               |
+| VDD (5V)  | VDD            | optional*- power supply for PIC MCU, you may power target from other source |
+| P1.4      | N/C            | optional- indicator: connected LED with 1k ohm resistor                     |
+| P1.5      | MCLR           | reset line of PIC MCU                                                       |
+| P1.6      | PGD            | programming data line                                                       |
+| P1.7      | PGC            | programming clock line                                                      |
+
+* If you are powering target PIC from other power source (in circuit programming), series resistors (something like 470-1000 Ohms) in MCLR, PGC and PGD lines are good idea, it will somehow decrease currents flowing through IO pins due to power supplies differences between arduino and target board. In this configuration, even targets running at 3,3V are possible to program, though it is dirty practice.
+
+Run arduino IDE, install [CH55xDuino](https://github.com/DeqingSun/ch55xduino), open programmer firmware from here (/fw/pp.ino), select CH552 board, complie and upload to CH55x - now you have PIC programmer ready to go. Go to software below.
+
 
 ## Software
 
