@@ -1,4 +1,4 @@
-# Programmer for 8-bit PIC devices built upon AVR (or Arduino)
+# Programmer for 8-bit PIC devices built upon AVR (or Arduino) or WCH CH55x
 
 For [Micro progmeter](https://github.com/jaromir-sukuba/micro_progmeter) project I want to deliver full set of open-source materials, but it would be shame if folks trying to replicate the project would have to buy another programmer to flash the PIC MCU, so I decided to do a little bit of brain stretching and implement PIC16F1xxx programmer with... Arduino. I really can't say I love this platform, but it is low cost and available.
 Together with SDCC compiler this serves as completely open-source basis for many 8-bit PIC devices.
